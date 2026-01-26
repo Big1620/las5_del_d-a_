@@ -1,0 +1,148 @@
+/**
+ * AdSlot Component
+ * Google AdSense compatible ad slot with CLS prevention
+ * 
+ * Design decisions:
+ * - Uses min-height to prevent layout shift (CLS)
+ * - Lazy loads ads below the fold
+ * - Supports multiple ad sizes
+ * - Accessible with proper ARIA labels
+ */
+
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
+
+export interface AdSlotProps {
+  /**
+   * AdSense ad slot ID (e.g., '1234567890')
+   */
+  adSlotId?: string;
+  
+  /**
+   * Ad format (e.g., 'auto', 'rectangle', 'horizontal')
+   */
+  format?: string;
+  
+  /**
+   * Ad size (e.g., '728x90', '300x250')
+   */
+  size?: string;
+  
+  /**
+   * Minimum height to prevent CLS
+   */
+  minHeight?: number;
+  
+  /**
+   * Lazy load the ad (only load when in viewport)
+   */
+  lazy?: boolean;
+  
+  /**
+   * Additional CSS classes
+   */
+  className?: string;
+  
+  /**
+   * Test mode - shows placeholder instead of real ads
+   */
+  testMode?: boolean;
+}
+
+export function AdSlot({
+  adSlotId,
+  format = 'auto',
+  size,
+  minHeight = 250,
+  lazy = true,
+  className,
+  testMode = false,
+}: AdSlotProps) {
+  const [isVisible, setIsVisible] = useState(!lazy);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!lazy || isVisible) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '50px' } // Start loading 50px before entering viewport
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [lazy, isVisible]);
+
+  useEffect(() => {
+    if (!isVisible || testMode || isLoaded) return;
+    if (!adSlotId || !process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID) return;
+
+    // Load AdSense script if not already loaded
+    if (typeof window !== 'undefined' && !(window as any).adsbygoogle) {
+      const script = document.createElement('script');
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      document.head.appendChild(script);
+    }
+
+    // Initialize ad
+    try {
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+      setIsLoaded(true);
+    } catch (error) {
+      console.error('Error loading ad:', error);
+    }
+  }, [isVisible, adSlotId, testMode, isLoaded]);
+
+  // Test mode - show placeholder
+  if (testMode) {
+    return (
+      <div
+        ref={containerRef}
+        className={cn(
+          'flex items-center justify-center bg-muted border-2 border-dashed border-muted-foreground/20',
+          className
+        )}
+        style={{ minHeight: `${minHeight}px` }}
+        aria-label="Anuncio (modo prueba)"
+      >
+        <span className="text-sm text-muted-foreground">
+          Ad Slot {size || format}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn('ad-slot', className)}
+      style={{ minHeight: `${minHeight}px` }}
+      aria-label="Anuncio"
+    >
+      {isVisible && (
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client={process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}
+          data-ad-slot={adSlotId}
+          data-ad-format={format}
+          data-full-width-responsive="true"
+          {...(size && { 'data-ad-size': size })}
+        />
+      )}
+    </div>
+  );
+}
