@@ -66,6 +66,40 @@ export function getCategoryUrl(slug: string): string {
   return `/categoria/${slug}`;
 }
 
+/** Slugs/nombres que WordPress usa para "sin categoría" */
+const UNCATEGORIZED_SLUGS = ['uncategorized', 'sin-categoria', 'sin-categoría'];
+const UNCATEGORIZED_NAMES = ['uncategorized', 'sin categoría', 'sin categoria'];
+
+/** Cuando la categoría es "Uncategorized", se muestra este nombre y se enlaza a esta categoría */
+export const UNCATEGORIZED_DISPLAY_NAME = 'Subsidios';
+export const UNCATEGORIZED_FALLBACK_SLUG = 'subsidios';
+
+/**
+ * Indica si una categoría es la categoría por defecto "Sin categoría"
+ */
+export function isUncategorized(category: { name?: string; slug: string }): boolean {
+  const slug = category.slug?.toLowerCase().trim() ?? '';
+  const name = (category.name ?? '').toLowerCase().trim();
+  return (
+    UNCATEGORIZED_SLUGS.some((s) => s === slug) ||
+    UNCATEGORIZED_NAMES.some((n) => n === name)
+  );
+}
+
+/**
+ * Nombre a mostrar para una categoría: "Uncategorized" → "Subsidios" (o el que definas en UNCATEGORIZED_DISPLAY_NAME)
+ */
+export function getCategoryDisplayName(category: { name: string; slug: string }): string {
+  return isUncategorized(category) ? UNCATEGORIZED_DISPLAY_NAME : category.name;
+}
+
+/**
+ * URL para una categoría: si es "Uncategorized" enlaza a /categoria/subsidios
+ */
+export function getCategoryHref(category: { slug: string }): string {
+  return isUncategorized(category) ? getCategoryUrl(UNCATEGORIZED_FALLBACK_SLUG) : getCategoryUrl(category.slug);
+}
+
 /**
  * Generate tag URL
  */

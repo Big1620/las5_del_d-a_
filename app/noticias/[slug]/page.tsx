@@ -9,11 +9,12 @@ import Link from 'next/link';
 import { getPostBySlug, getPostSlugs } from '@/lib/api/wordpress';
 import { generateArticleMetadata } from '@/lib/seo/metadata';
 import { generateNewsArticleSchema, generateBreadcrumbSchema } from '@/lib/seo/structured-data';
-import { getArticleUrl, getCategoryUrl, formatDate } from '@/lib/utils';
+import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, formatDate } from '@/lib/utils';
 import { AdSlot } from '@/components/ads/ad-slot';
 import type { Metadata } from 'next';
 
-export const revalidate = 60;
+// Revalidate every 5 minutes for articles (less frequent updates)
+export const revalidate = 300;
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -38,8 +39,8 @@ export default async function ArticlePage({ params }: Props) {
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Inicio', url: '/' },
     ...article.categories.slice(0, 1).map((c) => ({
-      name: c.name,
-      url: getCategoryUrl(c.slug),
+      name: getCategoryDisplayName(c),
+      url: getCategoryHref(c),
     })),
     { name: article.title, url: getArticleUrl(article.slug) },
   ]);
@@ -61,8 +62,8 @@ export default async function ArticlePage({ params }: Props) {
           {article.categories[0] && (
             <>
               <span className="mx-2">/</span>
-              <Link href={getCategoryUrl(article.categories[0].slug)} className="hover:text-foreground">
-                {article.categories[0].name}
+              <Link href={getCategoryHref(article.categories[0])} className="hover:text-foreground">
+                {getCategoryDisplayName(article.categories[0])}
               </Link>
             </>
           )}
@@ -78,10 +79,10 @@ export default async function ArticlePage({ params }: Props) {
                   {article.categories.map((c) => (
                     <Link
                       key={c.id}
-                      href={getCategoryUrl(c.slug)}
+                      href={getCategoryHref(c)}
                       className="text-sm font-medium text-primary hover:underline"
                     >
-                      {c.name}
+                      {getCategoryDisplayName(c)}
                     </Link>
                   ))}
                 </div>

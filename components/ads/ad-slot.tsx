@@ -89,38 +89,45 @@ export function AdSlot({
     if (!adSlotId || !process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID) return;
 
     // Load AdSense script if not already loaded
-    if (typeof window !== 'undefined' && !(window as any).adsbygoogle) {
-      const script = document.createElement('script');
-      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`;
-      script.async = true;
-      script.crossOrigin = 'anonymous';
-      document.head.appendChild(script);
-    }
+    if (typeof window !== 'undefined') {
+      interface WindowWithAdSense extends Window {
+        adsbygoogle?: unknown[];
+      }
+      const win = window as WindowWithAdSense;
+      
+      if (!win.adsbygoogle) {
+        const script = document.createElement('script');
+        script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`;
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        document.head.appendChild(script);
+      }
 
-    // Initialize ad
-    try {
-      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-      setIsLoaded(true);
-    } catch (error) {
-      console.error('Error loading ad:', error);
+      // Initialize ad
+      try {
+        win.adsbygoogle = win.adsbygoogle || [];
+        win.adsbygoogle.push({});
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error loading ad:', error);
+      }
     }
   }, [isVisible, adSlotId, testMode, isLoaded]);
 
-  // Test mode - show placeholder
+  // Test mode - show placeholder (fondo #F0F0F0, texto "Ad Slot 728x90" / "Ad Slot 300x600")
   if (testMode) {
+    const label = size ? `Ad Slot ${size}` : `Ad Slot ${format}`;
     return (
       <div
         ref={containerRef}
         className={cn(
-          'flex items-center justify-center bg-muted border-2 border-dashed border-muted-foreground/20',
+          'flex items-center justify-center bg-bg-ad dark:bg-gray-800 border border-border-news/50',
           className
         )}
         style={{ minHeight: `${minHeight}px` }}
         aria-label="Anuncio (modo prueba)"
       >
-        <span className="text-sm text-muted-foreground">
-          Ad Slot {size || format}
-        </span>
+        <span className="text-sm text-text-muted">{label}</span>
       </div>
     );
   }

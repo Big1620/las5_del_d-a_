@@ -1,4 +1,4 @@
-# Las 5 del Día - Frontend de Noticias
+# Las cinco del día - Frontend de Noticias
 
 Frontend profesional de alto tráfico para plataforma de noticias conectado a WordPress Headless.
 
@@ -72,7 +72,7 @@ Editar `.env.local` con tus valores:
 ```env
 NEXT_PUBLIC_WORDPRESS_API_URL=https://tu-wordpress.com/wp-json/wp/v2
 NEXT_PUBLIC_SITE_URL=https://tu-sitio.com
-NEXT_PUBLIC_SITE_NAME=Las 5 del Día
+NEXT_PUBLIC_SITE_NAME=Las cinco del día
 NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
 REVALIDATE_TIME=60
 ```

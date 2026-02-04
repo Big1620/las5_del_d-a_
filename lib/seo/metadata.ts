@@ -5,10 +5,10 @@
 
 import type { Metadata } from 'next';
 import type { NewsArticle, Author, Category, Tag } from '@/types';
-import { getArticleUrl, getCategoryUrl, getTagUrl, getAuthorUrl, absolute } from '@/lib/utils';
+import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, getTagUrl, getAuthorUrl, absolute } from '@/lib/utils';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Las 5 del Día';
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Las cinco del día';
 
 /**
  * Generate base metadata for the site
@@ -98,24 +98,25 @@ export function generateArticleMetadata(article: NewsArticle): Metadata {
 }
 
 /**
- * Generate metadata for category page. Canonical /categoria/[slug].
+ * Generate metadata for category page. Canonical /categoria/[slug] o / si es "Uncategorized".
  */
 export function generateCategoryMetadata(category: Category): Metadata {
-  const url = absolute(getCategoryUrl(category.slug));
-  const description = category.description || `Noticias sobre ${category.name}`;
+  const displayName = getCategoryDisplayName(category);
+  const url = absolute(getCategoryHref(category));
+  const description = category.description || `Noticias sobre ${displayName}`;
   return {
-    title: category.name,
+    title: displayName,
     description,
     alternates: { canonical: url },
     openGraph: {
       type: 'website',
       url,
-      title: category.name,
+      title: displayName,
       description,
     },
     twitter: {
       card: 'summary_large_image',
-      title: category.name,
+      title: displayName,
       description,
     },
   };

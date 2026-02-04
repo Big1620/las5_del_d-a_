@@ -64,18 +64,31 @@ async function fetchAPI<T>(
   }
 
   const { next, cache, ...init } = options;
-  const response = await fetch(url, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...init.headers },
-    next: { revalidate: next?.revalidate ?? REVALIDATE_SECONDS },
-    cache: cache ?? 'force-cache',
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 s para no bloquear el arranque
 
-  if (!response.ok) {
-    throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', ...init.headers },
+      next: { revalidate: next?.revalidate ?? REVALIDATE_SECONDS },
+      cache: cache ?? 'force-cache',
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`WordPress API timeout: no respuesta en 15s (${url})`);
+    }
+    throw err;
   }
-
-  return response.json();
 }
 
 function toAuthor(a: WordPressAuthor | WordPressEmbeddedAuthor | undefined, fallbackId: number): Author {
@@ -184,7 +197,8 @@ export async function getPosts(
   perPage = 10,
   category?: number,
   tag?: number,
-  search?: string
+  search?: string,
+  author?: number
 ): Promise<PostsResponse> {
   if (!isWordPressConfigured()) {
     return { posts: [], totalPages: 0, total: 0 };
@@ -198,6 +212,7 @@ export async function getPosts(
   if (category) params.set('categories', String(category));
   if (tag) params.set('tags', String(tag));
   if (search) params.set('search', search);
+  if (author) params.set('author', String(author));
 
   try {
     const posts = await fetchAPI<WordPressPostWithEmbedded[]>(`/posts?${params}`);
@@ -234,8 +249,10 @@ export async function getPostBySlug(slug: string): Promise<NewsArticle | null> {
 export async function getPostSlugs(limit = 100): Promise<SlugParam[]> {
   if (!isWordPressConfigured()) return [];
   try {
+    // Use longer revalidation for static params (1 hour) - these change infrequently
     const list = await fetchAPI<Array<{ slug: string }>>(
-      `/posts?per_page=${limit}&_fields=slug`
+      `/posts?per_page=${limit}&_fields=slug`,
+      { next: { revalidate: 3600 } }
     );
     return (list || []).map((p) => ({ slug: p.slug }));
   } catch (e) {
@@ -247,8 +264,10 @@ export async function getPostSlugs(limit = 100): Promise<SlugParam[]> {
 export async function getCategorySlugs(limit = 100): Promise<SlugParam[]> {
   if (!isWordPressConfigured()) return [];
   try {
+    // Use longer revalidation for static params (1 hour) - categories change infrequently
     const list = await fetchAPI<Array<{ slug: string }>>(
-      `/categories?per_page=${limit}&_fields=slug`
+      `/categories?per_page=${limit}&_fields=slug`,
+      { next: { revalidate: 3600 } }
     );
     return (list || []).map((c) => ({ slug: c.slug }));
   } catch (e) {
@@ -277,13 +296,18 @@ export async function getHomePageData(): Promise<HomePageData> {
 export async function getCategories(): Promise<Category[]> {
   if (!isWordPressConfigured()) return [];
   try {
-    const raw = await fetchAPI<WordPressCategory[]>('/categories?per_page=100');
+    // Categories change infrequently, use longer revalidation (5 minutes)
+    const raw = await fetchAPI<WordPressCategory[]>(
+      '/categories?per_page=100',
+      { next: { revalidate: 300 } }
+    );
     return (raw || []).map((c) => ({
       id: c.id,
       name: c.name,
       slug: c.slug,
       description: c.description,
       count: c.count,
+      parent: c.parent,
     }));
   } catch (e) {
     console.error('Error fetching categories:', e);
@@ -362,5 +386,35 @@ export async function getAuthorBySlug(slug: string): Promise<Author | null> {
   } catch (e) {
     console.error('Error fetching author by slug:', e);
     return null;
+  }
+}
+
+export async function getTagSlugs(limit = 100): Promise<SlugParam[]> {
+  if (!isWordPressConfigured()) return [];
+  try {
+    // Use longer revalidation for static params (1 hour) - tags change infrequently
+    const list = await fetchAPI<Array<{ slug: string }>>(
+      `/tags?per_page=${limit}&_fields=slug`,
+      { next: { revalidate: 3600 } }
+    );
+    return (list || []).map((t) => ({ slug: t.slug }));
+  } catch (e) {
+    console.error('Error fetching tag slugs:', e);
+    return [];
+  }
+}
+
+export async function getAuthorSlugs(limit = 100): Promise<SlugParam[]> {
+  if (!isWordPressConfigured()) return [];
+  try {
+    // Use longer revalidation for static params (1 hour) - authors change infrequently
+    const list = await fetchAPI<Array<{ slug: string }>>(
+      `/users?per_page=${limit}&_fields=slug`,
+      { next: { revalidate: 3600 } }
+    );
+    return (list || []).map((a) => ({ slug: a.slug }));
+  } catch (e) {
+    console.error('Error fetching author slugs:', e);
+    return [];
   }
 }

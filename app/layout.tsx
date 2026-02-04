@@ -11,32 +11,33 @@
  */
 
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { ThemeProvider } from './providers';
+import { AdBar } from '@/components/ads/ad-bar';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { AnalyticsProvider } from '@/components/analytics';
 import { generateBaseMetadata } from '@/lib/seo/metadata';
 import { generateOrganizationSchema, generateWebSiteSchema } from '@/lib/seo/structured-data';
+import { getCategories } from '@/lib/api/wordpress';
 import './globals.css';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans',
-  display: 'swap',
-});
-
-// You can add a serif font for headlines if desired
-// const serif = SomeSerifFont({ variable: '--font-serif' });
 
 export const metadata: Metadata = generateBaseMetadata();
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const organizationSchema = generateOrganizationSchema();
   const websiteSchema = generateWebSiteSchema();
+
+  // Categorías para el menú; si WordPress no responde, usamos array vacío para que la app arranque
+  let categories: Awaited<ReturnType<typeof getCategories>> = [];
+  try {
+    categories = await getCategories();
+  } catch (e) {
+    console.warn('[Layout] No se pudieron cargar categorías:', e);
+  }
 
   return (
     <html lang="es" suppressHydrationWarning>
@@ -51,7 +52,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className="font-serif antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -59,11 +60,17 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="flex min-h-screen flex-col">
-            <Header />
+            <AdBar />
+            <Header categories={categories} />
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
         </ThemeProvider>
+        <AnalyticsProvider
+          gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}
+          webVitalsEndpoint={process.env.NEXT_PUBLIC_WEB_VITALS_ENDPOINT}
+          debug={process.env.NODE_ENV === 'development'}
+        />
       </body>
     </html>
   );

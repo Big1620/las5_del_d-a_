@@ -174,6 +174,7 @@ export interface Category {
   slug: string;
   description?: string;
   count?: number;
+  parent?: number;
 }
 
 export interface Tag {

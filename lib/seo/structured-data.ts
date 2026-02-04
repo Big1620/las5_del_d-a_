@@ -4,10 +4,10 @@
  */
 
 import type { NewsArticle, Author, Category } from '@/types';
-import { getArticleUrl, getCategoryUrl, absolute } from '@/lib/utils';
+import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, getAuthorUrl, absolute } from '@/lib/utils';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Las 5 del Día';
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Las cinco del día';
 
 /**
  * Generate NewsArticle structured data. Canonical /noticias/[slug].
@@ -42,7 +42,7 @@ export function generateNewsArticleSchema(article: NewsArticle): object {
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` },
     },
     mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
-    articleSection: article.categories.map((c) => c.name).join(', ') || undefined,
+    articleSection: article.categories.map((c) => getCategoryDisplayName(c)).join(', ') || undefined,
     keywords: article.tags.length ? article.tags.map((t) => t.name).join(', ') : undefined,
   };
 }
@@ -51,12 +51,13 @@ export function generateNewsArticleSchema(article: NewsArticle): object {
  * Generate CollectionPage / ItemList schema for category archive.
  */
 export function generateCategorySchema(category: Category, articleUrls: string[]): object {
-  const pageUrl = absolute(getCategoryUrl(category.slug));
+  const displayName = getCategoryDisplayName(category);
+  const pageUrl = absolute(getCategoryHref(category));
   return {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: category.name,
-    description: category.description || `Noticias sobre ${category.name}`,
+    name: displayName,
+    description: category.description || `Noticias sobre ${displayName}`,
     url: pageUrl,
     publisher: {
       '@type': 'Organization',
@@ -74,8 +75,16 @@ export function generateCategorySchema(category: Category, articleUrls: string[]
   };
 }
 
+/** URLs oficiales de redes sociales (Organization sameAs) */
+const SOCIAL_LINKS = [
+  'https://www.facebook.com/people/Las-5-del-d%C3%ADa/100079698616627/',
+  'https://x.com/Las5_deldia',
+  'https://www.instagram.com/las5_deldia/',
+  'https://www.tiktok.com/@las5deldiaaaaa',
+] as const;
+
 /**
- * Generate Organization schema
+ * Generate Organization schema with social profiles (sameAs).
  */
 export function generateOrganizationSchema(): object {
   return {
@@ -84,9 +93,7 @@ export function generateOrganizationSchema(): object {
     name: SITE_NAME,
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
-    sameAs: [
-      // Add social media URLs here
-    ],
+    sameAs: [...SOCIAL_LINKS],
   };
 }
 
@@ -106,6 +113,40 @@ export function generateWebSiteSchema(): object {
         urlTemplate: `${SITE_URL}/buscar?q={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
+    },
+  };
+}
+
+/**
+ * Generate CollectionPage / ItemList schema for author archive.
+ */
+export function generateAuthorSchema(author: Author, articleUrls: string[]): object {
+  const pageUrl = absolute(getAuthorUrl(author.slug));
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    name: author.name,
+    description: author.description || `Artículos escritos por ${author.name}`,
+    url: pageUrl,
+    mainEntity: {
+      '@type': 'Person',
+      name: author.name,
+      description: author.description,
+      image: author.avatar,
+      url: author.url || pageUrl,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    mainEntityOfPage: {
+      '@type': 'ItemList',
+      itemListElement: articleUrls.slice(0, 10).map((url, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url,
+      })),
     },
   };
 }

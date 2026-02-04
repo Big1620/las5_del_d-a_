@@ -43,6 +43,13 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        category: "#E4002B",
+        "hover-red": "#C50025",
+        "border-news": "#E5E5E5",
+        "border-subtle": "#F0F0F0",
+        "text-secondary": "#333333",
+        "text-muted": "#767676",
+        "bg-ad": "#F0F0F0",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -50,7 +57,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        sans: ["system-ui", "sans-serif"],
         serif: ["var(--font-serif)", "Georgia", "serif"],
       },
       // Newspaper-style typography scale

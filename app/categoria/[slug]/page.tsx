@@ -15,12 +15,13 @@ import {
   generateCategorySchema,
   generateBreadcrumbSchema,
 } from '@/lib/seo/structured-data';
-import { getArticleUrl, getCategoryUrl, absolute } from '@/lib/utils';
+import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, absolute } from '@/lib/utils';
 import { ArticleCard } from '@/components/news/article-card';
 import { AdSlot } from '@/components/ads/ad-slot';
 import type { Metadata } from 'next';
 
-export const revalidate = 60;
+// Revalidate every 2 minutes for category pages
+export const revalidate = 120;
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -47,7 +48,7 @@ export default async function CategoryPage({ params }: Props) {
   const schema = generateCategorySchema(category, articleUrls);
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Inicio', url: '/' },
-    { name: category.name, url: getCategoryUrl(category.slug) },
+    { name: getCategoryDisplayName(category), url: getCategoryHref(category) },
   ]);
 
   return (
@@ -65,11 +66,11 @@ export default async function CategoryPage({ params }: Props) {
         <nav aria-label="Migas de pan" className="text-sm text-muted-foreground mb-6">
           <Link href="/" className="hover:text-foreground">Inicio</Link>
           <span className="mx-2">/</span>
-          <span className="text-foreground">{category.name}</span>
+          <Link href={getCategoryHref(category)} className="hover:text-foreground">{getCategoryDisplayName(category)}</Link>
         </nav>
 
         <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">{category.name}</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">{getCategoryDisplayName(category)}</h1>
           {category.description && (
             <p className="text-muted-foreground max-w-2xl">{category.description}</p>
           )}
