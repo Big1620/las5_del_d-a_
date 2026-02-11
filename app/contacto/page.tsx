@@ -7,6 +7,7 @@ import { Metadata } from 'next';
 import { generateBaseMetadata } from '@/lib/seo/metadata';
 import { absolute } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { ContactForm } from './contact-form';
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Las cinco del día';
 
@@ -45,63 +46,7 @@ export default function ContactPage() {
 
           <section>
             <h2 className="text-xl font-bold mb-4">Formulario de Contacto</h2>
-            <form className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium mb-2">
-                  Nombre
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  required
-                  className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="subject" className="block text-sm font-medium mb-2">
-                  Asunto
-                </label>
-                <input
-                  type="text"
-                  id="subject"
-                  name="subject"
-                  required
-                  className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium mb-2">
-                  Mensaje
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={6}
-                  required
-                  className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <Button type="submit" className="w-full">
-                Enviar Mensaje
-              </Button>
-            </form>
+            <ContactForm />
             <p className="text-sm text-muted-foreground mt-4">
               Nota: Este formulario es un placeholder. En producción, deberías integrar 
               un servicio de email o un sistema de gestión de contactos.

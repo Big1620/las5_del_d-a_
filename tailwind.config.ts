@@ -43,8 +43,8 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        category: "#E4002B",
-        "hover-red": "#C50025",
+        category: "#000000",
+        "hover-red": "#333333",
         "border-news": "#E5E5E5",
         "border-subtle": "#F0F0F0",
         "text-secondary": "#333333",
@@ -68,6 +68,27 @@ const config: Config = {
       // Grid system for newspaper layout
       gridTemplateColumns: {
         'newspaper': 'repeat(12, minmax(0, 1fr))',
+      },
+      // Container responsive: centrado y padding por breakpoint
+      container: {
+        center: true,
+        padding: {
+          DEFAULT: '1rem',
+          sm: '1.5rem',
+          lg: '2rem',
+          xl: '2rem',
+        },
+        screens: {
+          sm: '640px',
+          md: '768px',
+          lg: '1024px',
+          xl: '1280px',
+          '2xl': '1440px',
+        },
+      },
+      // Evitar overflow en grids/flex
+      minWidth: {
+        0: '0',
       },
     },
   },

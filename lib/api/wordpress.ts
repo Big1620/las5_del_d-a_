@@ -67,13 +67,14 @@ async function fetchAPI<T>(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 s para no bloquear el arranque
 
+  const revalidate = next?.revalidate ?? REVALIDATE_SECONDS;
   try {
     const response = await fetch(url, {
       ...init,
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json', ...init.headers },
-      next: { revalidate: next?.revalidate ?? REVALIDATE_SECONDS },
-      cache: cache ?? 'force-cache',
+      // Next.js: usar solo uno de cache o next.revalidate
+      ...(revalidate > 0 ? { next: { revalidate } } : { cache: cache ?? 'force-cache' }),
     });
     clearTimeout(timeoutId);
 
@@ -223,6 +224,57 @@ export async function getPosts(
   } catch (e) {
     console.error('Error fetching posts:', e);
     return { posts: [], totalPages: 0, total: 0 };
+  }
+}
+
+/**
+ * Fetch posts with pagination metadata from X-WP-Total / X-WP-TotalPages headers.
+ * Use for archive pages (author, tag, category) that need correct totalPages.
+ */
+export async function getPostsWithPagination(
+  page = 1,
+  perPage = 12,
+  filters: { category?: number; tag?: number; author?: number } = {}
+): Promise<{ posts: NewsArticle[]; total: number; totalPages: number }> {
+  if (!isWordPressConfigured()) {
+    return { posts: [], total: 0, totalPages: 0 };
+  }
+
+  const params = new URLSearchParams({
+    page: page.toString(),
+    per_page: perPage.toString(),
+    _embed: 'true',
+  });
+  if (filters.category) params.set('categories', String(filters.category));
+  if (filters.tag) params.set('tags', String(filters.tag));
+  if (filters.author) params.set('author', String(filters.author));
+
+  const base = WP_API_URL.replace(/\/$/, '');
+  const normalizedEndpoint = `/posts?${params}`;
+  const resolved = `${base}${normalizedEndpoint}`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(resolved, {
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      next: { revalidate: REVALIDATE_SECONDS },
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`WordPress API error: ${res.status} ${res.statusText}`);
+    }
+
+    const total = parseInt(res.headers.get('X-WP-Total') ?? '0', 10);
+    const totalPages = Math.max(1, parseInt(res.headers.get('X-WP-TotalPages') ?? '1', 10));
+    const data: WordPressPostWithEmbedded[] = await res.json();
+    const posts = data.map((post) => transformPostFromEmbedded(post));
+    return { posts, total, totalPages };
+  } catch (e) {
+    console.error('Error fetching posts with pagination:', e);
+    return { posts: [], total: 0, totalPages: 0 };
   }
 }
 

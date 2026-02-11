@@ -1,17 +1,25 @@
 /**
  * Article page: /noticias/[slug]
- * ISR, generateStaticParams, dynamic metadata, JSON-LD, AdSlot.
+ * ISR, generateStaticParams, dynamic metadata, JSON-LD, AdSlot (dynamic import para reducir JS).
  */
 
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { getPostBySlug, getPostSlugs } from '@/lib/api/wordpress';
 import { generateArticleMetadata } from '@/lib/seo/metadata';
 import { generateNewsArticleSchema, generateBreadcrumbSchema } from '@/lib/seo/structured-data';
-import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, formatDate } from '@/lib/utils';
-import { AdSlot } from '@/components/ads/ad-slot';
+import { getArticleUrl, getCategoryDisplayName, getCategoryHref, formatDate } from '@/lib/utils';
 import type { Metadata } from 'next';
+
+const AdSlot = dynamic(
+  () => import('@/components/ads/ad-slot').then((m) => ({ default: m.AdSlot })),
+  {
+    ssr: false,
+    loading: () => <div className="my-8 min-h-[250px] bg-bg-ad dark:bg-gray-800 animate-pulse rounded" aria-hidden />,
+  }
+);
 
 // Revalidate every 5 minutes for articles (less frequent updates)
 export const revalidate = 300;
@@ -106,6 +114,8 @@ export default async function ArticlePage({ params }: Props) {
                   className="object-cover"
                   sizes="(max-width: 1024px) 100vw, 66vw"
                   priority
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgEDBAMBAAAAAAAAAAAAAQIDAAQRBRIhMQYTQVFh/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAZEQACAwEAAAAAAAAAAAAAAAABAgADESH/2gAMAwEAAhEDEEA/ALnT9RvbO0igt7ueKKNQqIkhCqB0AKKKKk2bMZJj/9k="
                 />
               </div>
             )}

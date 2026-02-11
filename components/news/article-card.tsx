@@ -32,7 +32,7 @@ export function ArticleCard({
 
   if (variant === 'compact') {
     return (
-      <Link href={articleUrl} className="block group">
+      <Link href={articleUrl} className="block group transition-all duration-300 ease-out">
         <div className="flex gap-4">
           {article.featuredImage && (
             <div className="relative w-24 h-24 flex-shrink-0 rounded overflow-hidden">
@@ -61,7 +61,7 @@ export function ArticleCard({
   if (variant === 'featured') {
     return (
       <Link href={articleUrl} className="block group">
-        <Card className="overflow-hidden h-full">
+        <Card className="overflow-hidden h-full transition-all duration-300 ease-out hover:shadow-md">
           {article.featuredImage && (
             <div className="relative w-full aspect-video overflow-hidden">
               <Image
@@ -70,7 +70,6 @@ export function ArticleCard({
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                priority
               />
               {article.isBreaking && (
                 <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded text-sm font-bold">
@@ -103,7 +102,7 @@ export function ArticleCard({
   // Default variant
   return (
     <Link href={articleUrl} className="block group">
-      <Card className="overflow-hidden h-full">
+      <Card className="overflow-hidden h-full transition-all duration-300 ease-out hover:shadow-md">
         {article.featuredImage && (
           <div className="relative w-full aspect-video overflow-hidden">
             <Image

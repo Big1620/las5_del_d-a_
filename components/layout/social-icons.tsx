@@ -46,14 +46,14 @@ const SOCIAL_LINKS = [
 
 export function SocialIcons({ className = '' }: { className?: string }) {
   return (
-    <div className={`flex items-center gap-3 ${className}`} role="list" aria-label="Redes sociales">
+    <div className={`flex items-center gap-2 overflow-visible ${className}`} role="list" aria-label="Redes sociales">
       {SOCIAL_LINKS.map(({ href, label, icon }) => (
         <Link
           key={href}
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-white transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#0a2463] rounded dark:text-foreground dark:focus:ring-white/50 dark:focus:ring-offset-background"
+          className="flex shrink-0 items-center justify-center w-9 h-9 rounded-md text-white transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#0a2463] dark:text-foreground dark:focus:ring-white/50 dark:focus:ring-offset-background [&_svg]:shrink-0 [&_svg]:overflow-visible"
           aria-label={label}
         >
           {icon}

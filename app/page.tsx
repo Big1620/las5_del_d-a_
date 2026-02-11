@@ -1,16 +1,42 @@
 /**
  * Página de inicio
  * Hero → Ad 728x90 → Barra secundaria → Grid 65% + Sidebar 30% (Lo más leído + Ad 300x600)
+ * AdSlot y TrendingSidebar con dynamic import para reducir el bundle inicial y lazy load de anuncios.
  */
 
 import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { getHomePageData } from '@/lib/api/wordpress';
 import { generateNewsArticleSchema } from '@/lib/seo/structured-data';
 import { HeroArticle } from '@/components/news/hero-article';
 import { SecondaryNewsBar } from '@/components/news/secondary-news-bar';
 import { ColumnArticleCard } from '@/components/news/column-article-card';
-import { TrendingSidebar } from '@/components/news/trending-sidebar';
-import { AdSlot } from '@/components/ads/ad-slot';
+
+const AdSlot = dynamic(
+  () => import('@/components/ads/ad-slot').then((m) => ({ default: m.AdSlot })),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="bg-bg-ad dark:bg-gray-800 w-full max-w-[728px] mx-auto animate-pulse rounded"
+        style={{ minHeight: 90 }}
+        aria-hidden
+      />
+    ),
+  }
+);
+
+const TrendingSidebar = dynamic(
+  () => import('@/components/news/trending-sidebar').then((m) => ({ default: m.TrendingSidebar })),
+  {
+    loading: () => (
+      <div className="space-y-4" aria-hidden>
+        <div className="h-8 w-48 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
+        <div className="h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
+      </div>
+    ),
+  }
+);
 
 export const revalidate = 60;
 
@@ -60,20 +86,21 @@ async function HomePageContent() {
 
   return (
     <>
-      <div className="bg-white dark:bg-background">
-        <div className="container mx-auto px-4 md:px-6 py-6 md:py-8 max-w-[1280px]">
-          {/* 1. HERO - Noticia principal */}
+      <div className="bg-white dark:bg-background w-full min-w-0">
+        {/* Contenedor: ancho máximo 1440px, bordes rojos, responsive padding */}
+        <div className="mx-auto w-full max-w-[1440px] min-w-0 border-x-0 sm:border-x-2 border-[var(--primary-red)] px-3 sm:px-4 md:px-6 pt-0 pb-4 sm:pb-6 md:pb-8">
+            {/* 1. HERO - Noticia principal */}
           {hero && (
             <section>
               <HeroArticle article={hero} />
             </section>
           )}
 
-          {/* Separador 1px #E5E5E5, margin 30px 0 */}
-          <div className="border-t border-[#E5E5E5] dark:border-gray-600 my-[30px]" />
+          {/* Separador */}
+          <div className="border-t border-[#E5E5E5] dark:border-gray-600 my-6 sm:my-[30px]" />
 
-          {/* 2. Ad Slot 728x90 - Entre hero y barra secundaria, centrado, fondo #F0F0F0 */}
-          <div className="flex justify-center my-[30px]">
+          {/* 2. Ad Slot 728x90 */}
+          <div className="flex justify-center my-6 sm:my-[30px]">
             <AdSlot
               adSlotId="1234567890"
               format="horizontal"
@@ -81,7 +108,7 @@ async function HomePageContent() {
               minHeight={90}
               lazy
               testMode
-              className="bg-bg-ad dark:bg-gray-800 w-full max-w-[728px]"
+              className="bg-bg-ad dark:bg-gray-800 w-full max-w-[728px] min-w-0"
             />
           </div>
 
@@ -92,30 +119,30 @@ async function HomePageContent() {
             </section>
           )}
 
-          {/* Separador inferior barra: 1px, margin 30px 0 */}
-          <div className="border-t border-[#E5E5E5] dark:border-gray-600 my-[30px]" />
+          {/* Separador */}
+          <div className="border-t border-[#E5E5E5] dark:border-gray-600 my-6 sm:my-[30px]" />
 
-          {/* 4. Grid principal 65% + Sidebar 30% */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 lg:gap-10">
-            {/* Columna principal ~65% - Grid 2 columnas, gap 40px, separadores #E5E5E5 */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-x-[40px] gap-y-0">
+          {/* 4. Grid principal: columna + sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(280px,320px)] gap-6 lg:gap-10 min-w-0">
+            {/* Columna principal - 2 columnas en md+ */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-x-6 md:gap-x-8 lg:gap-x-10 gap-y-0 min-w-0">
               {/* Columna izquierda */}
-              <div className="space-y-0">
+              <div className="space-y-0 min-w-0">
                 {leftColumnArticles.map((article) => (
                   <div
                     key={article.id}
-                    className="border-b border-[#E5E5E5] dark:border-gray-600 pb-[50px] last:border-0 last:pb-0 mb-0"
+                    className="border-b border-[#E5E5E5] dark:border-gray-600 pb-8 sm:pb-10 md:pb-[50px] last:border-0 last:pb-0 mb-0"
                   >
                     <ColumnArticleCard article={article} />
                   </div>
                 ))}
               </div>
               {/* Columna derecha */}
-              <div className="space-y-0">
+              <div className="space-y-0 min-w-0">
                 {rightColumnArticles.map((article) => (
                   <div
                     key={article.id}
-                    className="border-b border-[#E5E5E5] dark:border-gray-600 pb-[50px] last:border-0 last:pb-0 mb-0"
+                    className="border-b border-[#E5E5E5] dark:border-gray-600 pb-8 sm:pb-10 md:pb-[50px] last:border-0 last:pb-0 mb-0"
                   >
                     <ColumnArticleCard article={article} />
                   </div>
@@ -123,8 +150,8 @@ async function HomePageContent() {
               </div>
             </section>
 
-            {/* Sidebar ~30% - Lo más leído + Ad 300x600 */}
-            <aside className="lg:sticky lg:top-28 space-y-8">
+            {/* Sidebar - Lo más leído + Ad */}
+            <aside className="lg:sticky lg:top-28 space-y-6 lg:space-y-8 min-w-0 w-full max-w-full">
               {data.trending.length > 0 && (
                 <TrendingSidebar articles={data.trending} title="Lo más leído" />
               )}
@@ -132,10 +159,10 @@ async function HomePageContent() {
                 adSlotId="1122334455"
                 format="vertical"
                 size="300x600"
-                minHeight={600}
+                minHeight={250}
                 lazy
                 testMode
-                className="bg-bg-ad dark:bg-gray-800 w-full"
+                className="bg-bg-ad dark:bg-gray-800 w-full max-w-[300px] mx-auto lg:mx-0 min-h-[250px] lg:min-h-[600px]"
               />
             </aside>
           </div>
@@ -158,7 +185,7 @@ async function HomePageContent() {
 
 function HomePageSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-[1280px] mx-auto space-y-8">
+    <div className="mx-auto w-full max-w-[1440px] min-w-0 border-x-0 sm:border-x-2 border-[var(--primary-red)] px-3 sm:px-4 md:px-6 py-6 md:py-8 space-y-6 md:space-y-8">
       <div className="min-h-[400px] grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="h-64 lg:h-80 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
         <div className="h-64 lg:h-80 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
@@ -184,7 +211,7 @@ function HomePageSkeleton() {
         </div>
         <div className="space-y-6">
           <div className="h-8 w-48 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
-          <div className="h-96 bg-bg-ad dark:bg-gray-800 animate-pulse rounded" />
+          <div className="h-64 lg:h-96 bg-bg-ad dark:bg-gray-800 animate-pulse rounded max-w-[300px] mx-auto lg:mx-0" />
         </div>
       </div>
     </div>

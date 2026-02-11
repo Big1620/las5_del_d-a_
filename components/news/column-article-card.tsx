@@ -22,11 +22,11 @@ export function ColumnArticleCard({ article, showExcerpt = true }: ColumnArticle
   const hasImage = !!article.featuredImage?.url;
 
   return (
-    <article className="group flex flex-col sm:flex-row gap-4 sm:gap-6">
-      {/* Imagen siempre a la izquierda: 40%, ratio 16:9 o 4:3, object-fit cover */}
+    <article className="group flex flex-col sm:flex-row gap-3 sm:gap-6 min-w-0">
+      {/* Imagen: 40% en sm+, full width en móvil */}
       <Link
         href={url}
-        className="relative w-full sm:w-[40%] sm:min-w-[200px] sm:max-w-[250px] flex-shrink-0 overflow-hidden rounded-sm aspect-video sm:aspect-[4/3] bg-[#F0F0F0] dark:bg-gray-800 cursor-pointer"
+        className="relative w-full sm:w-[40%] sm:min-w-[140px] sm:max-w-[250px] flex-shrink-0 overflow-hidden rounded-sm aspect-video sm:aspect-[4/3] bg-[#F0F0F0] dark:bg-gray-800 cursor-pointer min-w-0"
       >
         {hasImage ? (
           <Image

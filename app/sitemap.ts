@@ -15,7 +15,7 @@ import type { MetadataRoute } from 'next';
 import { getPosts, getCategories, getTags, getAuthorSlugs } from '@/lib/api/wordpress';
 import { getArticleUrl, getCategoryUrl, getTagUrl, getAuthorUrl } from '@/lib/utils';
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com').replace(/\/$/, '');
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://lascincodeldia.com').replace(/\/$/, '');
 
 /** Páginas estáticas del sitio con prioridad y frecuencia de cambio */
 const STATIC_ROUTES: Array<{

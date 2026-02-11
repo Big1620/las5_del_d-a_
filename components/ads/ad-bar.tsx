@@ -35,7 +35,7 @@ export function AdBar() {
       role="complementary"
       aria-label="Espacio publicitario"
     >
-      <div className="mx-auto flex max-w-[1440px] items-center justify-center px-4 py-2">
+      <div className="mx-auto flex w-full max-w-[1440px] min-w-0 items-center justify-center px-3 sm:px-4 py-2">
         <div className="w-full flex items-center justify-center" style={{ minHeight: 60 }}>
           <AdSlot
             adSlotId="header-leaderboard"

@@ -3,10 +3,10 @@
  * NewsArticle, BreadcrumbList, CollectionPage. Canonical URLs from SITE_URL.
  */
 
-import type { NewsArticle, Author, Category } from '@/types';
-import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, getAuthorUrl, absolute } from '@/lib/utils';
+import type { NewsArticle, Author, Category, Tag } from '@/types';
+import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, getAuthorUrl, getTagUrl, absolute } from '@/lib/utils';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lascincodeldia.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Las cinco del día';
 
 /**
@@ -118,29 +118,64 @@ export function generateWebSiteSchema(): object {
 }
 
 /**
- * Generate CollectionPage / ItemList schema for author archive.
+ * Generate Person schema for author (JSON-LD).
+ */
+export function generateAuthorPersonSchema(author: Author): object {
+  const pageUrl = absolute(getAuthorUrl(author.slug));
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: author.name,
+    description: author.description,
+    image: author.avatar,
+    url: author.url || pageUrl,
+  };
+}
+
+/**
+ * Generate CollectionPage + ItemList schema for author archive.
  */
 export function generateAuthorSchema(author: Author, articleUrls: string[]): object {
   const pageUrl = absolute(getAuthorUrl(author.slug));
   return {
     '@context': 'https://schema.org',
-    '@type': 'ProfilePage',
+    '@type': 'CollectionPage',
     name: author.name,
     description: author.description || `Artículos escritos por ${author.name}`,
     url: pageUrl,
-    mainEntity: {
-      '@type': 'Person',
-      name: author.name,
-      description: author.description,
-      image: author.avatar,
-      url: author.url || pageUrl,
-    },
     publisher: {
       '@type': 'Organization',
       name: SITE_NAME,
       url: SITE_URL,
     },
-    mainEntityOfPage: {
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: articleUrls.slice(0, 10).map((url, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url,
+      })),
+    },
+  };
+}
+
+/**
+ * Generate CollectionPage + ItemList schema for tag archive.
+ */
+export function generateTagSchema(tag: Tag, articleUrls: string[]): object {
+  const pageUrl = absolute(getTagUrl(tag.slug));
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: tag.name,
+    description: `Artículos etiquetados con ${tag.name}`,
+    url: pageUrl,
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    mainEntity: {
       '@type': 'ItemList',
       itemListElement: articleUrls.slice(0, 10).map((url, i) => ({
         '@type': 'ListItem',

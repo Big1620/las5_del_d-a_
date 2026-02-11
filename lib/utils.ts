@@ -114,7 +114,7 @@ export function getAuthorUrl(slug: string): string {
   return `/autor/${slug}`;
 }
 
-const FALLBACK_SITE_URL = 'https://example.com';
+const FALLBACK_SITE_URL = 'https://lascincodeldia.com';
 
 /**
  * Absolute URL for canonical, OG, sitemap. Uses NEXT_PUBLIC_SITE_URL.

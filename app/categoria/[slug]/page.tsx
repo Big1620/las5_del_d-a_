@@ -1,29 +1,40 @@
 /**
  * Category archive: /categoria/[slug]
- * ISR, generateStaticParams, dynamic metadata, JSON-LD, AdSlot.
+ * ISR, generateStaticParams, dynamic metadata, JSON-LD, infinite scroll + ?page= fallback, AdSlot (dynamic) lazy.
  */
 
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   getCategoryBySlug,
   getCategorySlugs,
-  getPosts,
+  getPostsWithPagination,
 } from '@/lib/api/wordpress';
 import { generateCategoryMetadata } from '@/lib/seo/metadata';
 import {
   generateCategorySchema,
   generateBreadcrumbSchema,
 } from '@/lib/seo/structured-data';
-import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, absolute } from '@/lib/utils';
-import { ArticleCard } from '@/components/news/article-card';
-import { AdSlot } from '@/components/ads/ad-slot';
+import { getArticleUrl, getCategoryDisplayName, getCategoryHref, absolute } from '@/lib/utils';
+import { Breadcrumb } from '@/components/layout/breadcrumb';
+import { ArchiveFeed } from '@/components/news/archive-feed';
 import type { Metadata } from 'next';
 
-// Revalidate every 2 minutes for category pages
+const AdSlot = dynamic(
+  () => import('@/components/ads/ad-slot').then((m) => ({ default: m.AdSlot })),
+  {
+    ssr: false,
+    loading: () => <div className="min-h-[90px] lg:min-h-[600px] bg-bg-ad dark:bg-gray-800 animate-pulse rounded" aria-hidden />,
+  }
+);
+
+const PER_PAGE = 12;
 export const revalidate = 120;
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
+};
 
 export async function generateStaticParams() {
   const slugs = await getCategorySlugs(50);
@@ -37,12 +48,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return generateCategoryMetadata(category);
 }
 
-export default async function CategoryPage({ params }: Props) {
+export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, parseInt(String(pageParam || '1'), 10) || 1);
+
   const category = await getCategoryBySlug(slug);
   if (!category) notFound();
 
-  const { posts: categoryPosts } = await getPosts(1, 24, category.id);
+  const { posts: categoryPosts, totalPages, total } = await getPostsWithPagination(
+    currentPage,
+    PER_PAGE,
+    { category: category.id }
+  );
   const articleUrls = categoryPosts.map((p) => absolute(getArticleUrl(p.slug)));
 
   const schema = generateCategorySchema(category, articleUrls);
@@ -50,6 +68,8 @@ export default async function CategoryPage({ params }: Props) {
     { name: 'Inicio', url: '/' },
     { name: getCategoryDisplayName(category), url: getCategoryHref(category) },
   ]);
+
+  const basePath = getCategoryHref(category);
 
   return (
     <>
@@ -63,38 +83,38 @@ export default async function CategoryPage({ params }: Props) {
       />
 
       <div className="container mx-auto px-4 py-8">
-        <nav aria-label="Migas de pan" className="text-sm text-muted-foreground mb-6">
-          <Link href="/" className="hover:text-foreground">Inicio</Link>
-          <span className="mx-2">/</span>
-          <Link href={getCategoryHref(category)} className="hover:text-foreground">{getCategoryDisplayName(category)}</Link>
-        </nav>
+        <Breadcrumb
+          items={[
+            { name: 'Inicio', href: '/' },
+            { name: getCategoryDisplayName(category) },
+          ]}
+          className="mb-6"
+        />
 
         <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">{getCategoryDisplayName(category)}</h1>
           {category.description && (
             <p className="text-muted-foreground max-w-2xl">{category.description}</p>
           )}
-          {category.count != null && (
-            <p className="text-sm text-muted-foreground mt-2">
-              {category.count} {category.count === 1 ? 'artículo' : 'artículos'}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground mt-2">
+            {total} {total === 1 ? 'artículo' : 'artículos'}
+          </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 space-y-8">
-            {categoryPosts.length === 0 ? (
+            {categoryPosts.length === 0 && total === 0 ? (
               <p className="text-muted-foreground">Aún no hay noticias en esta categoría.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categoryPosts.map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    article={article}
-                    variant="default"
-                  />
-                ))}
-              </div>
+              <ArchiveFeed
+                initialPosts={categoryPosts}
+                totalPages={totalPages}
+                total={total}
+                filter={{ categoryId: category.id }}
+                basePath={basePath}
+                perPage={PER_PAGE}
+                initialPage={currentPage}
+              />
             )}
 
             <AdSlot
@@ -107,7 +127,7 @@ export default async function CategoryPage({ params }: Props) {
             />
           </div>
 
-          <aside className="lg:col-span-4 space-y-8">
+          <aside className="lg:col-span-4 space-y-8 sticky top-8 self-start transition-all duration-300">
             <AdSlot
               adSlotId="0987654321"
               format="vertical"

@@ -35,7 +35,7 @@ export function SecondaryArticle({ article, showImage = true }: SecondaryArticle
         <div className="flex-1 min-w-0">
           {category && (
             <Link href={getCategoryHref(category)} className="inline-block mb-1">
-              <span className="text-[#C70000] font-semibold text-xs uppercase tracking-wide hover:underline">
+              <span className="text-black dark:text-white font-semibold text-xs uppercase tracking-wide hover:underline">
                 {getCategoryDisplayName(category)}
               </span>
             </Link>

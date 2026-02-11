@@ -1,28 +1,40 @@
 /**
  * Tag archive: /etiqueta/[slug]
- * ISR, generateStaticParams, dynamic metadata, JSON-LD, AdSlot.
+ * ISR revalidate=60, generateStaticParams, dynamic metadata (noindex if thin), JSON-LD, AdSlot (dynamic) lazy.
  */
 
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   getTagBySlug,
   getTagSlugs,
-  getPosts,
+  getPostsWithPagination,
 } from '@/lib/api/wordpress';
 import { generateTagMetadata } from '@/lib/seo/metadata';
 import {
+  generateTagSchema,
   generateBreadcrumbSchema,
 } from '@/lib/seo/structured-data';
 import { getArticleUrl, getTagUrl, absolute } from '@/lib/utils';
-import { ArticleCard } from '@/components/news/article-card';
-import { AdSlot } from '@/components/ads/ad-slot';
+import { Breadcrumb } from '@/components/layout/breadcrumb';
+import { ArchiveFeed } from '@/components/news/archive-feed';
 import type { Metadata } from 'next';
 
-// Revalidate every 2 minutes for tag pages
-export const revalidate = 120;
+const AdSlot = dynamic(
+  () => import('@/components/ads/ad-slot').then((m) => ({ default: m.AdSlot })),
+  {
+    ssr: false,
+    loading: () => <div className="min-h-[90px] lg:min-h-[600px] bg-bg-ad dark:bg-gray-800 animate-pulse rounded" aria-hidden />,
+  }
+);
 
-type Props = { params: Promise<{ slug: string }> };
+const PER_PAGE = 12;
+export const revalidate = 60;
+
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
+};
 
 export async function generateStaticParams() {
   const slugs = await getTagSlugs(50);
@@ -36,56 +48,70 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return generateTagMetadata(tag);
 }
 
-export default async function TagPage({ params }: Props) {
+export default async function TagPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, parseInt(String(pageParam || '1'), 10) || 1);
+
   const tag = await getTagBySlug(slug);
   if (!tag) notFound();
 
-  const { posts: tagPosts } = await getPosts(1, 24, undefined, tag.id);
+  const { posts: tagPosts, totalPages, total } = await getPostsWithPagination(
+    currentPage,
+    PER_PAGE,
+    { tag: tag.id }
+  );
   const articleUrls = tagPosts.map((p) => absolute(getArticleUrl(p.slug)));
 
+  const schema = generateTagSchema(tag, articleUrls);
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Inicio', url: '/' },
     { name: tag.name, url: getTagUrl(tag.slug) },
   ]);
 
+  const basePath = getTagUrl(tag.slug);
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
 
       <div className="container mx-auto px-4 py-8">
-        <nav aria-label="Migas de pan" className="text-sm text-muted-foreground mb-6">
-          <Link href="/" className="hover:text-foreground">Inicio</Link>
-          <span className="mx-2">/</span>
-          <span className="text-foreground">{tag.name}</span>
-        </nav>
+        <Breadcrumb
+          items={[
+            { name: 'Inicio', href: '/' },
+            { name: tag.name },
+          ]}
+          className="mb-6"
+        />
 
         <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Etiqueta: {tag.name}</h1>
-          {tag.count != null && (
-            <p className="text-sm text-muted-foreground mt-2">
-              {tag.count} {tag.count === 1 ? 'artículo' : 'artículos'}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground mt-2">
+            {total} {total === 1 ? 'artículo' : 'artículos'}
+          </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 space-y-8">
-            {tagPosts.length === 0 ? (
+            {tagPosts.length === 0 && total === 0 ? (
               <p className="text-muted-foreground">Aún no hay noticias con esta etiqueta.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tagPosts.map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    article={article}
-                    variant="default"
-                  />
-                ))}
-              </div>
+              <ArchiveFeed
+                initialPosts={tagPosts}
+                totalPages={totalPages}
+                total={total}
+                filter={{ tagId: tag.id }}
+                basePath={basePath}
+                perPage={PER_PAGE}
+                initialPage={currentPage}
+              />
             )}
 
             <AdSlot
@@ -98,7 +124,7 @@ export default async function TagPage({ params }: Props) {
             />
           </div>
 
-          <aside className="lg:col-span-4 space-y-8">
+          <aside className="lg:col-span-4 space-y-8 sticky top-8 self-start transition-all duration-300">
             <AdSlot
               adSlotId="0987654321"
               format="vertical"

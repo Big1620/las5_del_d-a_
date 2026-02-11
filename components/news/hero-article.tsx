@@ -20,9 +20,9 @@ export function HeroArticle({ article }: HeroArticleProps) {
 
   return (
     <article className="group bg-white dark:bg-background">
-      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 lg:gap-8 min-h-[400px] lg:min-h-[500px]">
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 sm:gap-6 lg:gap-8 min-h-[320px] sm:min-h-[400px] lg:min-h-[500px] min-w-0">
         {/* Izquierda 60%: categoría, titular, descripción, timestamp */}
-        <div className="flex flex-col justify-center order-2 lg:order-1">
+        <div className="flex flex-col justify-center order-2 lg:order-1 min-w-0 overflow-hidden">
           {category && (
             <div className="mb-3">
               <CategoryLabel category={category} />
@@ -53,15 +53,18 @@ export function HeroArticle({ article }: HeroArticleProps) {
         {article.featuredImage && (
           <Link
             href={url}
-            className="relative w-full min-h-[240px] sm:min-h-[280px] lg:min-h-[400px] overflow-hidden rounded-sm order-1 lg:order-2 cursor-pointer"
+            className="relative w-full min-h-[220px] sm:min-h-[280px] lg:min-h-[400px] overflow-hidden rounded-sm order-1 lg:order-2 cursor-pointer aspect-[4/3] lg:aspect-[5/4] min-w-0"
           >
             <Image
               src={article.featuredImage.url}
               alt={article.featuredImage.alt}
               fill
               className="object-cover w-full h-full group-hover:opacity-90 transition-opacity duration-300 cursor-pointer"
-              sizes="(max-width: 768px) 100vw, 40vw"
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
               priority
+              fetchPriority="high"
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgEDBAMBAAAAAAAAAAAAAQIDAAQRBRIhMQYTQVFh/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAZEQACAwEAAAAAAAAAAAAAAAABAgADESH/2gAMAwEAAhEDEEA/ALnT9RvbO0igt7ueKKNQqIkhCqB0AKKKKk2bMZJj/9k="
             />
             {article.isBreaking && (
               <span className="absolute top-3 left-3 bg-category text-white py-1 px-3 rounded-sm text-xs font-bold uppercase">

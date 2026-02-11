@@ -7,8 +7,9 @@ import type { Metadata } from 'next';
 import type { NewsArticle, Author, Category, Tag } from '@/types';
 import { getArticleUrl, getCategoryUrl, getCategoryDisplayName, getCategoryHref, getTagUrl, getAuthorUrl, absolute } from '@/lib/utils';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lascincodeldia.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Las cinco del día';
+const GOOGLE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
 /**
  * Generate base metadata for the site
@@ -54,6 +55,9 @@ export function generateBaseMetadata(): Metadata {
         'max-snippet': -1,
       },
     },
+    ...(GOOGLE_VERIFICATION && {
+      verification: { google: GOOGLE_VERIFICATION },
+    }),
   };
 }
 
@@ -123,18 +127,23 @@ export function generateCategoryMetadata(category: Category): Metadata {
 }
 
 /**
- * Generate metadata for tag page
+ * Generate metadata for tag page.
+ * noindex when count is 0 or 1 to avoid thin content in index.
  */
 export function generateTagMetadata(tag: Tag): Metadata {
   const url = absolute(getTagUrl(tag.slug));
   const title = `Etiqueta: ${tag.name}`;
   const description = `Artículos etiquetados con ${tag.name}`;
+  const noindex = (tag.count ?? 0) <= 1;
   return {
     title,
     description,
     alternates: { canonical: url },
     openGraph: { type: 'website', url, title, description },
     twitter: { card: 'summary', title, description },
+    ...(noindex && {
+      robots: { index: false, follow: true },
+    }),
   };
 }
 

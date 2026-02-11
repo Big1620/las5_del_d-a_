@@ -4,16 +4,17 @@
 
 @layer base {
   :root {
+    /* --font-serif set by next/font in layout (Source_Serif_4); fallback for SSR */
     --font-serif: Georgia, "Times New Roman", serif;
-    --primary-red: #E4002B;
-    --hover-red: #C50025;
+    --primary-red: #000000;
+    --hover-red: #333333;
     --text-primary: #000000;
     --text-secondary: #333333;
     --text-muted: #767676;
     --border-color: #E5E5E5;
     --background-light: #F8F8F8;
     --white: #FFFFFF;
-    --category-red: #E4002B;
+    --category-red: #000000;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -63,9 +64,15 @@
   * {
     @apply border-border;
   }
+  html {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+    min-width: 0;
   }
 }
 
@@ -100,19 +107,151 @@
   }
 }
 
-/* Prevent layout shift for ads */
+/* Prevent layout shift for ads (CLS) */
 .ad-slot {
   min-height: 250px;
   display: block;
+  contain: layout;
 }
 
-/* Smooth scrolling */
+/* Logo "Las 5 del día": espacio abajo con margin (no translate) para que no se recorte */
+header[role="banner"],
+header[role="banner"] > div,
+header[role="banner"] > div > div {
+  overflow: visible !important;
+}
+.header-top-row {
+  overflow: visible;
+}
+.header-logo-wrap,
+.header-logo-wrap > div:first-child {
+  overflow: visible;
+}
+.header-social-wrap {
+  overflow: visible;
+}
+/* Redes + categorías: desplazamiento solo en desktop grande para no romper responsive */
+@media (min-width: 1280px) {
+  .header-social-wrap > div:first-child {
+    position: relative;
+    left: -190px;
+  }
+}
+/* Logo: margin-top en lugar de translateY para que el contenedor reserve espacio y no recorte (solo el logo, no el enlace Inicio del nav) */
+header .header-logo-wrap .logo-link,
+header .header-logo-wrap a[href="/"] {
+  margin-top: 1rem !important;
+  overflow: visible !important;
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  header .header-logo-wrap .logo-link,
+  header .header-logo-wrap a[href="/"] {
+    margin-top: 2.5rem !important;
+  }
+}
+header .header-logo-wrap .logo-link span,
+header .header-logo-wrap a[href="/"] span {
+  overflow: visible;
+  display: block;
+}
+
+/* Smooth scrolling (WCAG 2.3.3: respetar preferencia de movimiento reducido) */
 html {
   scroll-behavior: smooth;
 }
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
-/* Focus visible for accessibility */
+/* Focus visible for accessibility (WCAG 2.4.7) */
 *:focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
+}
+
+/* Skip link: visible solo al recibir foco (WCAG 2.4.1 Bypass Blocks) */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.25rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid hsl(var(--ring));
+  border-radius: 0 0 0.25rem 0;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+.skip-link:focus {
+  left: 0;
+  outline: none;
+  outline-offset: 0;
+}
+
+/* ===== Barra de Accesibilidad WCAG 2.0 ===== */
+
+/* 1.4.3 Alto contraste (WCAG 1.4.3 Contrast Minimum) */
+[data-a11y-high-contrast="true"] {
+  --a11y-fg: #000000;
+  --a11y-bg: #ffffff;
+  --a11y-accent: #0066cc;
+  --a11y-border: #000000;
+}
+
+[data-a11y-high-contrast="true"].dark {
+  --a11y-fg: #ffffff;
+  --a11y-bg: #000000;
+  --a11y-accent: #66b3ff;
+  --a11y-border: #ffffff;
+}
+
+[data-a11y-high-contrast="true"] body {
+  color: var(--a11y-fg) !important;
+  background-color: var(--a11y-bg) !important;
+}
+
+[data-a11y-high-contrast="true"] a {
+  color: var(--a11y-accent) !important;
+  text-decoration: underline !important;
+}
+
+[data-a11y-high-contrast="true"] * {
+  border-color: var(--a11y-border) !important;
+}
+
+/* 1.4.1 Subrayar enlaces (WCAG 1.4.1 Use of Color) */
+[data-a11y-underline-links="true"] a:not([class*="no-underline"]) {
+  text-decoration: underline !important;
+  text-underline-offset: 0.2em;
+}
+
+/* 2.4.7 Resaltar foco visible (WCAG 2.4.7 Focus Visible) */
+[data-a11y-emphasis-focus="true"] *:focus-visible {
+  outline: 3px solid #0066cc !important;
+  outline-offset: 3px !important;
+}
+
+[data-a11y-emphasis-focus="true"].dark *:focus-visible {
+  outline-color: #66b3ff !important;
+}
+
+/* 2.2.2 Reducir movimiento (WCAG 2.2.2 Pause, Stop, Hide) */
+[data-a11y-reduce-motion="true"] *,
+[data-a11y-reduce-motion="true"] *::before,
+[data-a11y-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }

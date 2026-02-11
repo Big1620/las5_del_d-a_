@@ -1,30 +1,42 @@
 /**
  * Author archive: /autor/[slug]
- * ISR, generateStaticParams, dynamic metadata, JSON-LD, AdSlot.
+ * ISR revalidate=60, generateStaticParams, dynamic metadata, JSON-LD, AdSlot (dynamic) lazy.
  */
 
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import {
   getAuthorBySlug,
   getAuthorSlugs,
-  getPosts,
+  getPostsWithPagination,
 } from '@/lib/api/wordpress';
 import { generateAuthorMetadata } from '@/lib/seo/metadata';
 import {
+  generateAuthorPersonSchema,
   generateAuthorSchema,
   generateBreadcrumbSchema,
 } from '@/lib/seo/structured-data';
 import { getArticleUrl, getAuthorUrl, absolute } from '@/lib/utils';
-import { ArticleCard } from '@/components/news/article-card';
-import { AdSlot } from '@/components/ads/ad-slot';
+import { Breadcrumb } from '@/components/layout/breadcrumb';
+import { ArchiveFeed } from '@/components/news/archive-feed';
 import type { Metadata } from 'next';
 
-// Revalidate every 2 minutes for author pages
-export const revalidate = 120;
+const AdSlot = dynamic(
+  () => import('@/components/ads/ad-slot').then((m) => ({ default: m.AdSlot })),
+  {
+    ssr: false,
+    loading: () => <div className="min-h-[90px] lg:min-h-[600px] bg-bg-ad dark:bg-gray-800 animate-pulse rounded" aria-hidden />,
+  }
+);
 
-type Props = { params: Promise<{ slug: string }> };
+const PER_PAGE = 12;
+export const revalidate = 60;
+
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
+};
 
 export async function generateStaticParams() {
   const slugs = await getAuthorSlugs(50);
@@ -38,25 +50,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return generateAuthorMetadata(author);
 }
 
-export default async function AuthorPage({ params }: Props) {
+export default async function AuthorPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, parseInt(String(pageParam || '1'), 10) || 1);
+
   const author = await getAuthorBySlug(slug);
   if (!author) notFound();
 
-  const { posts: authorPosts } = await getPosts(1, 24, undefined, undefined, undefined, author.id);
+  const { posts: authorPosts, totalPages, total } = await getPostsWithPagination(
+    currentPage,
+    PER_PAGE,
+    { author: author.id }
+  );
   const articleUrls = authorPosts.map((p) => absolute(getArticleUrl(p.slug)));
 
-  const schema = generateAuthorSchema(author, articleUrls);
+  const personSchema = generateAuthorPersonSchema(author);
+  const collectionSchema = generateAuthorSchema(author, articleUrls);
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Inicio', url: '/' },
     { name: author.name, url: getAuthorUrl(author.slug) },
   ]);
 
+  const basePath = getAuthorUrl(author.slug);
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
       />
       <script
         type="application/ld+json"
@@ -64,11 +90,13 @@ export default async function AuthorPage({ params }: Props) {
       />
 
       <div className="container mx-auto px-4 py-8">
-        <nav aria-label="Migas de pan" className="text-sm text-muted-foreground mb-6">
-          <Link href="/" className="hover:text-foreground">Inicio</Link>
-          <span className="mx-2">/</span>
-          <span className="text-foreground">{author.name}</span>
-        </nav>
+        <Breadcrumb
+          items={[
+            { name: 'Inicio', href: '/' },
+            { name: author.name },
+          ]}
+          className="mb-6"
+        />
 
         <header className="mb-8">
           <div className="flex items-start gap-6">
@@ -77,7 +105,8 @@ export default async function AuthorPage({ params }: Props) {
                 <Image
                   src={author.avatar}
                   alt={author.name}
-                  fill
+                  width={96}
+                  height={96}
                   className="object-cover"
                 />
               </div>
@@ -88,7 +117,7 @@ export default async function AuthorPage({ params }: Props) {
                 <p className="text-muted-foreground max-w-2xl mb-2">{author.description}</p>
               )}
               <p className="text-sm text-muted-foreground">
-                {authorPosts.length} {authorPosts.length === 1 ? 'artículo' : 'artículos'}
+                {total} {total === 1 ? 'artículo' : 'artículos'}
               </p>
             </div>
           </div>
@@ -96,18 +125,18 @@ export default async function AuthorPage({ params }: Props) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 space-y-8">
-            {authorPosts.length === 0 ? (
+            {authorPosts.length === 0 && total === 0 ? (
               <p className="text-muted-foreground">Este autor aún no ha publicado artículos.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {authorPosts.map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    article={article}
-                    variant="default"
-                  />
-                ))}
-              </div>
+              <ArchiveFeed
+                initialPosts={authorPosts}
+                totalPages={totalPages}
+                total={total}
+                filter={{ authorId: author.id }}
+                basePath={basePath}
+                perPage={PER_PAGE}
+                initialPage={currentPage}
+              />
             )}
 
             <AdSlot
@@ -120,7 +149,7 @@ export default async function AuthorPage({ params }: Props) {
             />
           </div>
 
-          <aside className="lg:col-span-4 space-y-8">
+          <aside className="lg:col-span-4 space-y-8 sticky top-8 self-start transition-all duration-300">
             <AdSlot
               adSlotId="0987654321"
               format="vertical"

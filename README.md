@@ -66,15 +66,13 @@ npm install
 2. Configurar variables de entorno:
 ```bash
 cp .env.example .env.local
+# Para producción: cp .env.production.example .env.production
 ```
 
-Editar `.env.local` con tus valores:
+Editar `.env.local` con tus valores (ver `.env.production.example` para producción):
 ```env
-NEXT_PUBLIC_WORDPRESS_API_URL=https://tu-wordpress.com/wp-json/wp/v2
-NEXT_PUBLIC_SITE_URL=https://tu-sitio.com
-NEXT_PUBLIC_SITE_NAME=Las cinco del día
-NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
-REVALIDATE_TIME=60
+NEXT_PUBLIC_WP_API_URL=https://lascincodeldia.com/wp-json
+NEXT_PUBLIC_SITE_URL=https://lascincodeldia.com
 ```
 
 3. Ejecutar en desarrollo:
@@ -121,6 +119,50 @@ npm start
 - Implementado con next-themes
 - Persistencia de preferencias
 - Transiciones suaves
+
+## 🚀 Producción / Staging
+
+El proyecto incluye todo lo necesario para staging y producción:
+
+| Recurso | Ubicación |
+|---------|-----------|
+| Variables ENV | `.env.production.example` |
+| Health check | `GET /api/health` |
+| Analytics | GA4 + Plausible (opcional) |
+| Search Console | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` |
+| Error logging | Sentry (`npm i @sentry/nextjs`) |
+| robots.txt | `/robots.txt` |
+| Sitemap | `/sitemap.xml` |
+| Docker | `Dockerfile` + `docker-compose.yml` |
+| Checklist deploy | `docs/DEPLOY_CHECKLIST.md` |
+| Backups | `docs/BACKUPS.md` |
+
+### Scripts de producción
+
+```bash
+npm run seed          # Verificar entorno y WordPress
+npm run smoke         # Smoke tests (BASE_URL requerido)
+npm run smoke:local   # Smoke tests contra localhost
+```
+
+### Docker
+
+```bash
+docker build -t las5deldia .
+docker run -p 3000:3000 --env-file .env.production las5deldia
+# .env.production con NEXT_PUBLIC_WP_API_URL=https://lascincodeldia.com/wp-json y NEXT_PUBLIC_SITE_URL=https://lascincodeldia.com
+# o: docker-compose up -d
+```
+
+### Sentry (opcional)
+
+```bash
+npm install @sentry/nextjs
+```
+
+Configurar `SENTRY_DSN` en variables de entorno. Ver `instrumentation.ts` y `sentry.*.config.ts`.
+
+---
 
 ## 📝 Próximos Pasos
 
