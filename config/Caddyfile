@@ -1,0 +1,16 @@
+# Caddy - Alternativa a Traefik
+# SSL automático con Let's Encrypt
+# Usar con: docker run -v $(pwd)/config/Caddyfile:/etc/caddy/Caddyfile caddy caddy run
+
+{
+    # ACME_EMAIL se pasa por env o se sustituye manualmente
+    email admin@lascincodeldia.com
+}
+
+www.lascincodeldia.com, lascincodeldia.com {
+    reverse_proxy nextjs:3000
+}
+
+cms.lascincodeldia.com {
+    reverse_proxy wordpress:80
+}

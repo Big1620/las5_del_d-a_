@@ -16,6 +16,7 @@ import dynamic from 'next/dynamic';
 import { Source_Serif_4 } from 'next/font/google';
 import { ThemeProvider } from './providers';
 import { AdBar } from '@/components/ads/ad-bar';
+import { SideRailAd } from '@/components/ads/side-rail-ads';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AnalyticsProvider } from '@/components/analytics';
@@ -99,10 +100,16 @@ export default async function RootLayout({
             <Suspense fallback={<header className="sticky top-0 z-50 h-14 w-full bg-[#0a2463] md:h-16" aria-hidden />}>
               <Header categories={categories} />
             </Suspense>
-            <main id="main-content" className="flex-1 min-w-0 w-full" role="main">
-              {children}
-            </main>
-            <Footer />
+            <div className="flex flex-1 min-w-0 w-full">
+              <SideRailAd side="left" />
+              <div className="flex flex-1 min-w-0 w-full flex-col">
+                <main id="main-content" className="flex-1 min-w-0 w-full" role="main">
+                  {children}
+                </main>
+                <Footer />
+              </div>
+              <SideRailAd side="right" />
+            </div>
           </div>
         </ThemeProvider>
         <NewsletterCapture />

@@ -1,0 +1,32 @@
+# Traefik v3 - Configuración estática
+# Reverse proxy + Let's Encrypt para www.lascincodeldia.com y cms.lascincodeldia.com
+
+api:
+  dashboard: true
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: ${ACME_EMAIL}
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: las5-network
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+log:
+  level: INFO
+accessLog: {}

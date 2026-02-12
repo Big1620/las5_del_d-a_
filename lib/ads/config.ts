@@ -10,6 +10,8 @@ export type AdSlotId =
   | 'leaderboard'
   | 'in-article'
   | 'sidebar'
+  | 'sidebar-left'
+  | 'sidebar-right'
   | 'footer'
   | 'archive';
 
@@ -65,6 +67,20 @@ export const AD_SLOTS: Record<AdSlotId, AdSlotConfig> = {
     sizeMobile: '300x250',
     minHeight: 600,
     minHeightMobile: 250,
+    format: 'vertical',
+  },
+  'sidebar-left': {
+    slotId: process.env.NEXT_PUBLIC_ADS_SLOT_SIDE_LEFT || '1111111111',
+    layout: 'sidebar-left',
+    size: '160x600',
+    minHeight: 600,
+    format: 'vertical',
+  },
+  'sidebar-right': {
+    slotId: process.env.NEXT_PUBLIC_ADS_SLOT_SIDE_RIGHT || '2222222222',
+    layout: 'sidebar-right',
+    size: '160x600',
+    minHeight: 600,
     format: 'vertical',
   },
   footer: {

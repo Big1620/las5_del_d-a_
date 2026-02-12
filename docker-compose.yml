@@ -1,25 +1,138 @@
-# Las 5 del día - Docker Compose
-# Uso: docker-compose up -d
-# Variables: crear .env o .env.production con NEXT_PUBLIC_WP_API_URL, NEXT_PUBLIC_SITE_URL, etc.
+# Las 5 del día - Arquitectura DevOps
+# Frontend: www.lascincodeldia.com (Next.js)
+# CMS: cms.lascincodeldia.com (WordPress - interno)
+# SSL: Let's Encrypt vía Traefik
+#
+# Uso: docker compose up -d
+# Requiere: .env con DOMAIN, ACME_EMAIL, NEXT_PUBLIC_WP_API_URL, etc.
 
 services:
-  web:
+  # --- Reverse Proxy con SSL automático ---
+  traefik:
+    image: traefik:v3.2
+    container_name: las5-traefik
+    restart: unless-stopped
+    command: --configFile=/etc/traefik/traefik.yml
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certificates:/letsencrypt
+      - ./config/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./config/traefik/dynamic:/etc/traefik/dynamic:ro
+    environment:
+      - ACME_EMAIL=${ACME_EMAIL}
+      - DOMAIN=${DOMAIN:-lascincodeldia.com}
+    networks:
+      - las5-network
+
+  # --- Frontend Next.js (dominio público) ---
+  nextjs:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_WP_API_URL=${NEXT_PUBLIC_WP_API_URL}
         - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
-    ports:
-      - "3000:3000"
+    container_name: las5-nextjs
+    restart: unless-stopped
     env_file:
       - .env.production
     environment:
       - NODE_ENV=production
-    restart: unless-stopped
+    expose:
+      - "3000"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health',(r)=>{process.exit(r.statusCode===200?0:1)})"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      # Frontend: www.lascincodeldia.com, lascincodeldia.com, dev.5deldia.com
+      - "traefik.http.routers.nextjs.rule=Host(`www.${DOMAIN:-lascincodeldia.com}`) || Host(`${DOMAIN:-lascincodeldia.com}`) || Host(`dev.5deldia.com`) || Host(`www.5deldia.com`) || Host(`5deldia.com`)"
+      - "traefik.http.routers.nextjs.entrypoints=websecure"
+      - "traefik.http.routers.nextjs.tls=true"
+      - "traefik.http.routers.nextjs.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nextjs.loadbalancer.server.port=3000"
+      # Redirect HTTP → HTTPS
+      - "traefik.http.routers.nextjs-http.rule=Host(`www.${DOMAIN:-lascincodeldia.com}`) || Host(`${DOMAIN:-lascincodeldia.com}`) || Host(`dev.5deldia.com`) || Host(`www.5deldia.com`) || Host(`5deldia.com`)"
+      - "traefik.http.routers.nextjs-http.entrypoints=web"
+      - "traefik.http.routers.nextjs-http.middlewares=redirect-https@file"
+    depends_on:
+      traefik:
+        condition: service_started
+    networks:
+      - las5-network
+
+  # --- WordPress CMS (subdominio interno) ---
+  wordpress:
+    image: wordpress:6.7-php8.2-apache
+    container_name: las5-wordpress
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: mariadb
+      WORDPRESS_DB_USER: ${WP_DB_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WP_DB_NAME:-wordpress}
+      WORDPRESS_TABLE_PREFIX: ${WP_TABLE_PREFIX:-wp_}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://cms.${DOMAIN:-lascincodeldia.com}');
+        define('WP_SITEURL', 'https://cms.${DOMAIN:-lascincodeldia.com}');
+        define('WP_DEBUG', false);
+    volumes:
+      - wp-data:/var/www/html
+      - ./config/wordpress/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+    expose:
+      - "80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wordpress.rule=Host(`cms.${DOMAIN:-lascincodeldia.com}`)"
+      - "traefik.http.routers.wordpress.entrypoints=websecure"
+      - "traefik.http.routers.wordpress.tls=true"
+      - "traefik.http.routers.wordpress.tls.certresolver=letsencrypt"
+      - "traefik.http.services.wordpress.loadbalancer.server.port=80"
+      - "traefik.http.routers.wordpress-http.rule=Host(`cms.${DOMAIN:-lascincodeldia.com}`)"
+      - "traefik.http.routers.wordpress-http.entrypoints=web"
+      - "traefik.http.routers.wordpress-http.middlewares=redirect-https@file"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      traefik:
+        condition: service_started
+    networks:
+      - las5-network
+
+  # --- Base de datos para WordPress ---
+  mariadb:
+    image: mariadb:11.2
+    container_name: las5-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${WP_DB_NAME:-wordpress}
+      MARIADB_USER: ${WP_DB_USER:-wordpress}
+      MARIADB_PASSWORD: ${WP_DB_PASSWORD}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - las5-network
+
+networks:
+  las5-network:
+    driver: bridge
+
+volumes:
+  traefik-certificates:
+  wp-data:
+  mariadb-data:

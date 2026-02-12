@@ -1,0 +1,70 @@
+# Las 5 del día - Solo Frontend (WordPress externo)
+# Usa cuando WordPress está en otro servidor (ej: cms.lascincodeldia.com en hosting aparte)
+#
+# Uso: docker compose -f docker-compose.frontend-only.yml up -d
+# Requiere: .env con DOMAIN, ACME_EMAIL, NEXT_PUBLIC_WP_API_URL (URL del WordPress externo)
+
+services:
+  traefik:
+    image: traefik:v3.2
+    container_name: las5-traefik
+    restart: unless-stopped
+    command: --configFile=/etc/traefik/traefik.yml
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certificates:/letsencrypt
+      - ./config/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./config/traefik/dynamic:/etc/traefik/dynamic:ro
+    environment:
+      - ACME_EMAIL=${ACME_EMAIL}
+      - DOMAIN=${DOMAIN:-lascincodeldia.com}
+    networks:
+      - las5-network
+
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_WP_API_URL=${NEXT_PUBLIC_WP_API_URL}
+        - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+    container_name: las5-nextjs
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health',(r)=>{process.exit(r.statusCode===200?0:1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nextjs.rule=Host(`www.${DOMAIN:-lascincodeldia.com}`) || Host(`${DOMAIN:-lascincodeldia.com}`)"
+      - "traefik.http.routers.nextjs.entrypoints=websecure"
+      - "traefik.http.routers.nextjs.tls=true"
+      - "traefik.http.routers.nextjs.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nextjs.loadbalancer.server.port=3000"
+      - "traefik.http.routers.nextjs-http.rule=Host(`www.${DOMAIN:-lascincodeldia.com}`) || Host(`${DOMAIN:-lascincodeldia.com}`)"
+      - "traefik.http.routers.nextjs-http.entrypoints=web"
+      - "traefik.http.routers.nextjs-http.middlewares=redirect-https@file"
+    depends_on:
+      - traefik
+    networks:
+      - las5-network
+
+networks:
+  las5-network:
+    driver: bridge
+
+volumes:
+  traefik-certificates:

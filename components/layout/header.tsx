@@ -82,7 +82,7 @@ export function Header({ categories = [] }: HeaderProps) {
         <div className="header-top-row flex min-h-14 md:min-h-16 pt-2 pb-0 md:pt-3 md:pb-0 items-end justify-between gap-4 overflow-visible border-b-2 border-[var(--primary-red)]">
           {/* Izquierda: redes + categorías — 300px más a la izquierda en desktop */}
           <div className="header-social-wrap flex flex-col md:flex-row md:items-end min-w-0 flex-1 gap-2 overflow-visible pb-2 md:pb-2">
-            <div className="flex flex-col md:flex-row md:items-end gap-2 xl:relative xl:left-[-190px]">
+            <div className="flex flex-col md:flex-row md:items-end gap-2 md:translate-x-[170px]">
               <div className="flex items-center gap-2">
                 <button
                 type="button"
@@ -94,7 +94,6 @@ export function Header({ categories = [] }: HeaderProps) {
               >
                 {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </button>
-                <SocialIcons className="hidden shrink-0 md:flex" />
               </div>
               {/* Categorías: Inicio, Actualidad... en la misma línea que las redes (línea horizontal roja) */}
               <nav
@@ -147,17 +146,20 @@ export function Header({ categories = [] }: HeaderProps) {
           <div className="hidden md:block flex-1" aria-hidden />
 
           {/* Derecha: logo fijo; búsqueda y tema posicionados a la derecha sin afectar el logo */}
-          <div className="header-logo-wrap flex items-center justify-end gap-1 sm:gap-2 md:gap-4 xl:-translate-x-[170px] overflow-visible shrink-0 min-w-0">
-            <Link
-              href="/"
-              className="logo-link shrink-0 text-xl sm:text-3xl md:text-4xl xl:text-5xl font-bold leading-tight tracking-tight text-white no-underline hover:opacity-90 dark:text-foreground block text-right overflow-visible min-w-0"
-              aria-label={`${SITE_NAME} - Inicio`}
-            >
-              <span className="inline-block whitespace-nowrap md:-translate-x-[50px]">
-                Las{'\u00A0'}
-                {SITE_NAME.replace(/^Las\s+/i, '').trim() || 'cinco del día'}
-              </span>
-            </Link>
+          <div className="header-logo-wrap flex items-center justify-end gap-2 sm:gap-3 md:gap-4 xl:-translate-x-[170px] overflow-visible shrink-0 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 md:translate-x-[150px]">
+              <Link
+                href="/"
+                className="logo-link shrink-0 text-xl sm:text-3xl md:text-4xl xl:text-5xl font-bold leading-tight tracking-tight text-white no-underline hover:opacity-90 dark:text-foreground block text-right overflow-visible min-w-0"
+                aria-label={`${SITE_NAME} - Inicio`}
+              >
+                <span className="inline-block whitespace-nowrap md:-translate-x-[50px]">
+                  Las{'\u00A0'}
+                  {SITE_NAME.replace(/^Las\s+/i, '').trim() || 'cinco del día'}
+                </span>
+              </Link>
+              <SocialIcons className="hidden shrink-0 md:flex translate-y-[30px]" />
+            </div>
             <div className="absolute right-[calc(0.75rem-300px)] sm:right-[calc(1rem-300px)] top-1/2 -translate-y-1/2 md:top-1/2 flex items-center gap-1">
               <button
                 type="button"
