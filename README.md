@@ -127,7 +127,7 @@ El proyecto incluye todo lo necesario para staging y producción:
 | Recurso | Ubicación |
 |---------|-----------|
 | Variables ENV | `.env.production.example` |
-| Health check | `GET /api/health` |
+| Health check | (solo con servidor Node; estático: N/A) |
 | Analytics | GA4 + Plausible (opcional) |
 | Search Console | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` |
 | Error logging | Sentry (`npm i @sentry/nextjs`) |
@@ -143,7 +143,19 @@ El proyecto incluye todo lo necesario para staging y producción:
 npm run seed          # Verificar entorno y WordPress
 npm run smoke         # Smoke tests (BASE_URL requerido)
 npm run smoke:local   # Smoke tests contra localhost
+npm run wp:test       # Probar conexión a WordPress API (posts, categories, users)
+npm run wp:curl       # Prueba rápida con curl (status + tiempo por endpoint)
 ```
+
+### Build estático (output: export)
+
+El sitio genera HTML estático en `out/`. **WordPress debe ser accesible durante el build**:
+
+1. Verificar conectividad: `npm run wp:test` o `npm run wp:curl`
+2. Si `/users` da 401: añadir `WP_SKIP_AUTHORS=true` a `.env`
+3. Si hay timeouts: aumentar `WP_FETCH_TIMEOUT_MS=60000` en `.env`
+4. Ejecutar `npm run build` desde una red con acceso a tu WordPress
+5. Servir la carpeta `out/` con `npm run serve` o subir a hosting estático
 
 ### Docker
 
@@ -164,17 +176,20 @@ Configurar `SENTRY_DSN` en variables de entorno. Ver `instrumentation.ts` y `sen
 
 ---
 
-## 📝 Próximos Pasos
+## ✅ Funcionalidades implementadas
 
-1. **Configurar WordPress API**: Conectar con tu instancia de WordPress
-2. **Personalizar diseño**: Ajustar colores, tipografías y layout
-3. **Agregar funcionalidades**:
-   - Búsqueda
-   - Páginas de categoría/tag/autor
-   - Infinite scroll
-   - Newsletter integration
-4. **Configurar AdSense**: Reemplazar `testMode` con IDs reales
-5. **Optimizar imágenes**: Configurar dominio de WordPress en `next.config.js`
+- **Búsqueda** – Página `/buscar` con debounce, highlight de términos y tracking
+- **Páginas de categoría** – `/categoria/[slug]` con paginación e infinite scroll
+- **Páginas de etiqueta** – `/etiqueta/[slug]` con paginación
+- **Páginas de autor** – `/autor/[slug]` con paginación
+- **Newsletter** – Integración configurable (Formspree, Brevo, etc.)
+
+## 📝 Próximos Pasos (opcionales)
+
+1. **Configurar WordPress API**: Conectar con tu instancia de WordPress (si aún no lo hiciste)
+2. **Configurar AdSense**: Añadir `NEXT_PUBLIC_ADSENSE_CLIENT_ID` y IDs de slots reales en `.env.production` (en desarrollo `testMode` es automático)
+3. **Optimizar imágenes**: Configurar `NEXT_PUBLIC_WP_IMAGES_HOSTNAME` si las imágenes están en otro dominio
+4. **Infinite scroll**: El `ArchiveFeed` ya soporta carga de más páginas; opcional: infinite scroll automático sin botón
 
 ## 🔧 Configuración Avanzada
 

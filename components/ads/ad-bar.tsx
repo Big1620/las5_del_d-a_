@@ -43,7 +43,6 @@ export function AdBar() {
             size="728x90"
             minHeight={90}
             lazy
-            testMode
             className="w-full max-w-[728px] min-h-[60px] md:min-h-[90px] bg-bg-ad dark:bg-gray-800"
           />
         </div>

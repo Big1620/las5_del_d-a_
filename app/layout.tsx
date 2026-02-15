@@ -22,11 +22,6 @@ import { Footer } from '@/components/layout/footer';
 import { AnalyticsProvider } from '@/components/analytics';
 import { generateBaseMetadata } from '@/lib/seo/metadata';
 
-const NewsletterCapture = dynamic(
-  () => import('@/components/newsletter/newsletter-capture').then((m) => ({ default: m.NewsletterCapture })),
-  { ssr: false }
-);
-
 const AccessibilityToolbar = dynamic(
   () => import('@/components/accessibility/accessibility-toolbar').then((m) => ({ default: m.AccessibilityToolbar })),
   { ssr: false }
@@ -112,7 +107,6 @@ export default async function RootLayout({
             </div>
           </div>
         </ThemeProvider>
-        <NewsletterCapture />
         <AccessibilityToolbar />
         <AnalyticsProvider
           gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}

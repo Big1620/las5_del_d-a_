@@ -21,9 +21,6 @@ const AdSlot = dynamic(
   }
 );
 
-// Revalidate every 5 minutes for articles (less frequent updates)
-export const revalidate = 300;
-
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
@@ -33,6 +30,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === '__build_fallback') notFound();
   const article = await getPostBySlug(slug);
   if (!article) notFound();
   return generateArticleMetadata(article);
@@ -40,6 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
+  if (slug === '__build_fallback') notFound();
   const article = await getPostBySlug(slug);
   if (!article) notFound();
 
@@ -88,7 +87,7 @@ export default async function ArticlePage({ params }: Props) {
                     <Link
                       key={c.id}
                       href={getCategoryHref(c)}
-                      className="text-sm font-medium text-primary hover:underline"
+                      className="text-sm font-medium text-category hover:text-hover-red hover:underline"
                     >
                       {getCategoryDisplayName(c)}
                     </Link>
@@ -131,7 +130,6 @@ export default async function ArticlePage({ params }: Props) {
               size="300x250"
               minHeight={250}
               lazy
-              testMode
               className="my-8"
             />
 
@@ -158,7 +156,6 @@ export default async function ArticlePage({ params }: Props) {
               size="300x600"
               minHeight={600}
               lazy
-              testMode
             />
           </aside>
         </div>

@@ -65,7 +65,8 @@ async function fetchAPI<T>(
 
   const { next, cache, ...init } = options;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 s para no bloquear el arranque
+  const timeoutMs = parseInt(process.env.WP_FETCH_TIMEOUT_MS || '30000', 10); // 30 s por defecto
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const revalidate = next?.revalidate ?? REVALIDATE_SECONDS;
   try {
@@ -86,7 +87,7 @@ async function fetchAPI<T>(
   } catch (err) {
     clearTimeout(timeoutId);
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error(`WordPress API timeout: no respuesta en 15s (${url})`);
+      throw new Error(`WordPress API timeout: no respuesta en ${timeoutMs}ms (${url})`);
     }
     throw err;
   }
@@ -298,49 +299,54 @@ export async function getPostBySlug(slug: string): Promise<NewsArticle | null> {
 /**
  * Slugs for generateStaticParams (ISR). Limited batch for build time.
  */
+/** Slug placeholder cuando WP no responde - permite que el build estático complete */
+const FALLBACK_SLUG = { slug: '__build_fallback' };
+
 export async function getPostSlugs(limit = 100): Promise<SlugParam[]> {
-  if (!isWordPressConfigured()) return [];
+  if (!isWordPressConfigured()) return [FALLBACK_SLUG];
   try {
-    // Use longer revalidation for static params (1 hour) - these change infrequently
     const list = await fetchAPI<Array<{ slug: string }>>(
       `/posts?per_page=${limit}&_fields=slug`,
       { next: { revalidate: 3600 } }
     );
-    return (list || []).map((p) => ({ slug: p.slug }));
+    const slugs = (list || []).map((p) => ({ slug: p.slug }));
+    return slugs.length > 0 ? slugs : [FALLBACK_SLUG];
   } catch (e) {
     console.error('Error fetching post slugs:', e);
-    return [];
+    return [FALLBACK_SLUG];
   }
 }
 
 export async function getCategorySlugs(limit = 100): Promise<SlugParam[]> {
-  if (!isWordPressConfigured()) return [];
+  if (!isWordPressConfigured()) return [FALLBACK_SLUG];
   try {
-    // Use longer revalidation for static params (1 hour) - categories change infrequently
     const list = await fetchAPI<Array<{ slug: string }>>(
       `/categories?per_page=${limit}&_fields=slug`,
       { next: { revalidate: 3600 } }
     );
-    return (list || []).map((c) => ({ slug: c.slug }));
+    const slugs = (list || []).map((c) => ({ slug: c.slug }));
+    return slugs.length > 0 ? slugs : [FALLBACK_SLUG];
   } catch (e) {
     console.error('Error fetching category slugs:', e);
-    return [];
+    return [FALLBACK_SLUG];
   }
 }
 
+/**
+ * Home page data: 1 fetch for posts (10 items) + 1 for categories.
+ * featured=slice(0,5), breaking=slice(0,3), latest=all, trending=slice(0,5).
+ */
 export async function getHomePageData(): Promise<HomePageData> {
-  const [featured, breaking, latest, trending, categories] = await Promise.all([
-    getPosts(1, 5),
-    getPosts(1, 3),
+  const [postsResult, categories] = await Promise.all([
     getPosts(1, 10),
-    getPosts(1, 5),
     getCategories(),
   ]);
+  const posts = postsResult.posts;
   return {
-    featured: featured.posts,
-    breaking: breaking.posts,
-    latest: latest.posts,
-    trending: trending.posts,
+    featured: posts.slice(0, 5),
+    breaking: posts.slice(0, 3),
+    latest: posts,
+    trending: posts.slice(0, 5),
     categories,
   };
 }
@@ -442,31 +448,38 @@ export async function getAuthorBySlug(slug: string): Promise<Author | null> {
 }
 
 export async function getTagSlugs(limit = 100): Promise<SlugParam[]> {
-  if (!isWordPressConfigured()) return [];
+  if (!isWordPressConfigured()) return [FALLBACK_SLUG];
   try {
-    // Use longer revalidation for static params (1 hour) - tags change infrequently
     const list = await fetchAPI<Array<{ slug: string }>>(
       `/tags?per_page=${limit}&_fields=slug`,
       { next: { revalidate: 3600 } }
     );
-    return (list || []).map((t) => ({ slug: t.slug }));
+    const slugs = (list || []).map((t) => ({ slug: t.slug }));
+    return slugs.length > 0 ? slugs : [FALLBACK_SLUG];
   } catch (e) {
     console.error('Error fetching tag slugs:', e);
-    return [];
+    return [FALLBACK_SLUG];
   }
 }
 
+/** Si true, omite el endpoint /users (evita 401 cuando WP exige auth). */
+const SKIP_AUTHORS = process.env.WP_SKIP_AUTHORS === 'true';
+
 export async function getAuthorSlugs(limit = 100): Promise<SlugParam[]> {
-  if (!isWordPressConfigured()) return [];
+  if (!isWordPressConfigured()) return [FALLBACK_SLUG];
+  if (SKIP_AUTHORS) {
+    console.warn('[WordPress] WP_SKIP_AUTHORS=true: omitiendo /users (evita 401)');
+    return [FALLBACK_SLUG];
+  }
   try {
-    // Use longer revalidation for static params (1 hour) - authors change infrequently
     const list = await fetchAPI<Array<{ slug: string }>>(
       `/users?per_page=${limit}&_fields=slug`,
       { next: { revalidate: 3600 } }
     );
-    return (list || []).map((a) => ({ slug: a.slug }));
+    const slugs = (list || []).map((a) => ({ slug: a.slug }));
+    return slugs.length > 0 ? slugs : [FALLBACK_SLUG];
   } catch (e) {
-    console.error('Error fetching author slugs:', e);
-    return [];
+    console.error('Error fetching author slugs (401 = /users requiere auth):', e);
+    return [FALLBACK_SLUG];
   }
 }

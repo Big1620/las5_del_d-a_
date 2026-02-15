@@ -1,16 +1,11 @@
 /**
  * Sentry Server (Node.js)
- * Solo se inicializa si SENTRY_DSN está definido.
+ * Para habilitar: npm install @sentry/nextjs y definir SENTRY_DSN
  */
 
-import * as Sentry from '@sentry/nextjs';
-
+// Stub: con output: 'export' no hay servidor Node; este archivo no se ejecuta en build estático
 const dsn = process.env.SENTRY_DSN;
-
 if (dsn) {
-  Sentry.init({
-    dsn,
-    environment: process.env.NODE_ENV,
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,
-  });
+  console.warn('[Sentry] DSN configurado pero @sentry/nextjs no instalado.');
 }
+export {};

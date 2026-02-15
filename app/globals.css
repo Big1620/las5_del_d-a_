@@ -6,15 +6,15 @@
   :root {
     /* --font-serif set by next/font in layout (Source_Serif_4); fallback for SSR */
     --font-serif: Georgia, "Times New Roman", serif;
-    --primary-red: #000000;
-    --hover-red: #333333;
+    --primary-red: #c41e3a;
+    --hover-red: #a01830;
     --text-primary: #000000;
     --text-secondary: #333333;
     --text-muted: #767676;
     --border-color: #E5E5E5;
     --background-light: #F8F8F8;
     --white: #FFFFFF;
-    --category-red: #000000;
+    --category-red: #c41e3a;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -231,6 +231,53 @@ html {
   border-color: var(--a11y-border) !important;
 }
 
+/* Extender alto contraste a header, footer, nav y contenedores principales */
+[data-a11y-high-contrast="true"] header,
+[data-a11y-high-contrast="true"] footer,
+[data-a11y-high-contrast="true"] nav,
+[data-a11y-high-contrast="true"] [role="banner"],
+[data-a11y-high-contrast="true"] [role="contentinfo"],
+[data-a11y-high-contrast="true"] [role="main"],
+[data-a11y-high-contrast="true"] main,
+[data-a11y-high-contrast="true"] section,
+[data-a11y-high-contrast="true"] aside {
+  color: var(--a11y-fg) !important;
+  background-color: var(--a11y-bg) !important;
+}
+
+[data-a11y-high-contrast="true"] [class*="bg-card"],
+[data-a11y-high-contrast="true"] .card {
+  color: var(--a11y-fg) !important;
+  background-color: var(--a11y-bg) !important;
+}
+
+[data-a11y-high-contrast="true"] button,
+[data-a11y-high-contrast="true"] [role="button"] {
+  color: var(--a11y-fg) !important;
+  background-color: var(--a11y-bg) !important;
+  border: 2px solid var(--a11y-border) !important;
+}
+
+/* Switch activado: borde más grueso para indicar estado */
+[data-a11y-high-contrast="true"] [role="switch"][aria-checked="true"] {
+  border-width: 4px !important;
+}
+
+[data-a11y-high-contrast="true"] input,
+[data-a11y-high-contrast="true"] textarea,
+[data-a11y-high-contrast="true"] select {
+  color: var(--a11y-fg) !important;
+  background-color: var(--a11y-bg) !important;
+  border: 2px solid var(--a11y-border) !important;
+}
+
+/* Texto secundario/muted: mantener legibilidad en alto contraste */
+[data-a11y-high-contrast="true"] .text-muted-foreground,
+[data-a11y-high-contrast="true"] [class*="text-muted"] {
+  color: var(--a11y-fg) !important;
+  opacity: 0.9;
+}
+
 /* 1.4.1 Subrayar enlaces (WCAG 1.4.1 Use of Color) */
 [data-a11y-underline-links="true"] a:not([class*="no-underline"]) {
   text-decoration: underline !important;
@@ -238,13 +285,16 @@ html {
 }
 
 /* 2.4.7 Resaltar foco visible (WCAG 2.4.7 Focus Visible) */
-[data-a11y-emphasis-focus="true"] *:focus-visible {
+/* html: selector explícito para mayor especificidad que utilidades Tailwind */
+html[data-a11y-emphasis-focus="true"] *:focus-visible {
   outline: 3px solid #0066cc !important;
   outline-offset: 3px !important;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.4) !important;
 }
 
-[data-a11y-emphasis-focus="true"].dark *:focus-visible {
+html[data-a11y-emphasis-focus="true"].dark *:focus-visible {
   outline-color: #66b3ff !important;
+  box-shadow: 0 0 0 3px rgba(102, 179, 255, 0.5) !important;
 }
 
 /* 2.2.2 Reducir movimiento (WCAG 2.2.2 Pause, Stop, Hide) */

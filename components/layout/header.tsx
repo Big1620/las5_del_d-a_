@@ -79,7 +79,7 @@ export function Header({ categories = [] }: HeaderProps) {
     >
       <div className="relative mx-auto w-full max-w-[1440px] min-w-0 px-3 sm:px-4 overflow-x-hidden">
         {/* Fila superior: redes + categorías alineadas a la línea roja inferior; logo a la derecha */}
-        <div className="header-top-row flex min-h-14 md:min-h-16 pt-2 pb-0 md:pt-3 md:pb-0 items-end justify-between gap-4 overflow-visible border-b-2 border-[var(--primary-red)]">
+        <div className="header-top-row flex min-h-14 md:min-h-16 pt-2 pb-0 md:pt-3 md:pb-0 items-end justify-between gap-4 overflow-visible border-b-2 border-black dark:border-gray-600">
           {/* Izquierda: redes + categorías — 300px más a la izquierda en desktop */}
           <div className="header-social-wrap flex flex-col md:flex-row md:items-end min-w-0 flex-1 gap-2 overflow-visible pb-2 md:pb-2">
             <div className="flex flex-col md:flex-row md:items-end gap-2 md:translate-x-[170px]">

@@ -16,14 +16,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    try {
-      const Sentry = require('@sentry/nextjs');
-      if (Sentry?.captureException) {
-        Sentry.captureException(error);
-      }
-    } catch {
-      // Sentry no instalado
-    }
+    // Opcional: instalar @sentry/nextjs y añadir captureException aquí
   }, [error]);
 
   return (

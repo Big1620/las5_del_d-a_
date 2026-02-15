@@ -42,16 +42,6 @@ function buildNodes(posts: NewsArticle[]): FeedNode[] {
   return nodes;
 }
 
-function buildQuery(filter: ArchiveFeedFilter, page: number, perPage: number): string {
-  const params = new URLSearchParams();
-  params.set('page', String(page));
-  params.set('perPage', String(perPage));
-  if (filter.categoryId != null) params.set('categoryId', String(filter.categoryId));
-  if (filter.tagId != null) params.set('tagId', String(filter.tagId));
-  if (filter.authorId != null) params.set('authorId', String(filter.authorId));
-  return params.toString();
-}
-
 export function ArchiveFeed({
   initialPosts,
   totalPages,
@@ -71,11 +61,15 @@ export function ArchiveFeed({
     if (loading || !hasMore) return;
     setLoading(true);
     try {
-      const q = buildQuery(filter, nextPage, perPage);
-      const res = await fetch(`/api/archive-posts?${q}`);
-      if (!res.ok) throw new Error('Fetch failed');
-      const data = await res.json();
-      setPosts((prev) => [...prev, ...(data.posts || [])]);
+      const { fetchArchivePosts } = await import('@/lib/api/wordpress-client');
+      const data = await fetchArchivePosts({
+        page: nextPage,
+        perPage: perPage,
+        categoryId: filter.categoryId,
+        tagId: filter.tagId,
+        authorId: filter.authorId,
+      });
+      setPosts((prev) => [...prev, ...data.posts]);
       setNextPage((p) => p + 1);
       setHasMore(data.totalPages != null && nextPage < data.totalPages);
     } catch {
@@ -124,7 +118,6 @@ export function ArchiveFeed({
                     size="728x90"
                     minHeight={90}
                     lazy
-                    testMode
                   />
                 </div>
               );

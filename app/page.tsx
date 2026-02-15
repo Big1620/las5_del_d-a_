@@ -38,8 +38,6 @@ const TrendingSidebar = dynamic(
   }
 );
 
-export const revalidate = 60;
-
 async function HomePageContent() {
   const data = await getHomePageData();
 
@@ -88,7 +86,7 @@ async function HomePageContent() {
     <>
       <div className="bg-white dark:bg-background w-full min-w-0">
         {/* Contenedor: ancho máximo 1440px, bordes rojos, responsive padding */}
-        <div className="mx-auto w-full max-w-[1440px] min-w-0 border-x-0 sm:border-x-2 border-[var(--primary-red)] px-3 sm:px-4 md:px-6 pt-0 pb-4 sm:pb-6 md:pb-8">
+        <div className="mx-auto w-full max-w-[1440px] min-w-0 border-x-0 sm:border-x-2 border-black dark:border-gray-600 px-3 sm:px-4 md:px-6 pt-0 pb-4 sm:pb-6 md:pb-8">
             {/* 1. HERO - Noticia principal */}
           {hero && (
             <section>
@@ -107,7 +105,6 @@ async function HomePageContent() {
               size="728x90"
               minHeight={90}
               lazy
-              testMode
               className="bg-bg-ad dark:bg-gray-800 w-full max-w-[728px] min-w-0"
             />
           </div>
@@ -161,7 +158,6 @@ async function HomePageContent() {
                 size="300x600"
                 minHeight={250}
                 lazy
-                testMode
                 className="bg-bg-ad dark:bg-gray-800 w-full max-w-[300px] mx-auto lg:mx-0 min-h-[250px] lg:min-h-[600px]"
               />
             </aside>
@@ -185,7 +181,7 @@ async function HomePageContent() {
 
 function HomePageSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1440px] min-w-0 border-x-0 sm:border-x-2 border-[var(--primary-red)] px-3 sm:px-4 md:px-6 py-6 md:py-8 space-y-6 md:space-y-8">
+    <div className="mx-auto w-full max-w-[1440px] min-w-0 border-x-0 sm:border-x-2 border-black dark:border-gray-600 px-3 sm:px-4 md:px-6 py-6 md:py-8 space-y-6 md:space-y-8">
       <div className="min-h-[400px] grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="h-64 lg:h-80 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
         <div className="h-64 lg:h-80 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />

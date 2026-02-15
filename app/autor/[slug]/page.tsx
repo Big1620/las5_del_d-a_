@@ -31,12 +31,8 @@ const AdSlot = dynamic(
 );
 
 const PER_PAGE = 12;
-export const revalidate = 60;
 
-type Props = {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
-};
+type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
   const slugs = await getAuthorSlugs(50);
@@ -45,15 +41,16 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === '__build_fallback') notFound();
   const author = await getAuthorBySlug(slug);
   if (!author) notFound();
   return generateAuthorMetadata(author);
 }
 
-export default async function AuthorPage({ params, searchParams }: Props) {
+export default async function AuthorPage({ params }: Props) {
   const { slug } = await params;
-  const { page: pageParam } = await searchParams;
-  const currentPage = Math.max(1, parseInt(String(pageParam || '1'), 10) || 1);
+  if (slug === '__build_fallback') notFound();
+  const currentPage = 1;
 
   const author = await getAuthorBySlug(slug);
   if (!author) notFound();
@@ -145,7 +142,6 @@ export default async function AuthorPage({ params, searchParams }: Props) {
               size="728x90"
               minHeight={90}
               lazy
-              testMode
             />
           </div>
 
@@ -156,7 +152,6 @@ export default async function AuthorPage({ params, searchParams }: Props) {
               size="300x600"
               minHeight={600}
               lazy
-              testMode
             />
           </aside>
         </div>

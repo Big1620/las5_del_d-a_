@@ -12,7 +12,7 @@ import type { NewsArticle } from '@/types';
 import { cn } from '@/lib/utils';
 
 const DEBOUNCE_MS = 300;
-const SEARCH_URL = '/api/search';
+// Búsqueda directa a WordPress (sitio estático)
 
 export interface SearchOverlayProps {
   isOpen: boolean;
@@ -69,13 +69,9 @@ export function SearchOverlay({ isOpen, onClose, initialQuery = '' }: SearchOver
     }
     setLoading(true);
     try {
-      const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(q.trim())}`);
-      if (res.ok) {
-        const data = await res.json();
-        setResults(data.posts || []);
-      } else {
-        setResults([]);
-      }
+      const { searchPosts } = await import('@/lib/api/wordpress-client');
+      const posts = await searchPosts(q.trim());
+      setResults(posts);
     } catch {
       setResults([]);
     } finally {

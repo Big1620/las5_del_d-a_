@@ -3,12 +3,54 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
-export function ContactForm() {
-  const [submitted, setSubmitted] = useState(false);
+const CONTACT_FORM_URL = process.env.NEXT_PUBLIC_CONTACT_FORM_URL || '';
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+export function ContactForm() {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (!CONTACT_FORM_URL) {
+      setStatus('error');
+      setErrorMessage('Formulario no configurado. Añade NEXT_PUBLIC_CONTACT_FORM_URL.');
+      return;
+    }
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const data = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      subject: formData.get('subject'),
+      message: formData.get('message'),
+      _subject: `Contacto: ${formData.get('subject')}`,
+    };
+
+    setStatus('loading');
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch(CONTACT_FORM_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setStatus('error');
+        setErrorMessage(json.error || json.errors?.[0]?.message || 'Error al enviar. Inténtalo más tarde.');
+        return;
+      }
+
+      setStatus('success');
+      form.reset();
+    } catch {
+      setStatus('error');
+      setErrorMessage('Error de conexión. Inténtalo más tarde.');
+    }
   };
 
   return (
@@ -28,6 +70,7 @@ export function ContactForm() {
           name="name"
           required
           autoComplete="name"
+          disabled={status === 'loading'}
           className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
@@ -42,6 +85,7 @@ export function ContactForm() {
           name="email"
           required
           autoComplete="email"
+          disabled={status === 'loading'}
           className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
@@ -56,6 +100,7 @@ export function ContactForm() {
           name="subject"
           required
           autoComplete="off"
+          disabled={status === 'loading'}
           className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
@@ -69,22 +114,38 @@ export function ContactForm() {
           name="message"
           rows={6}
           required
+          disabled={status === 'loading'}
           className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
-      {submitted && (
+      {status === 'success' && (
         <p
-          className="text-sm text-primary font-medium"
+          className="text-sm text-green-700 dark:text-green-400 font-medium rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 p-3"
           role="status"
           aria-live="polite"
         >
-          Gracias. Este formulario es un placeholder; el mensaje no se envía aún.
+          Gracias. Tu mensaje ha sido enviado correctamente.
         </p>
       )}
 
-      <Button type="submit" className="w-full">
-        Enviar Mensaje
+      {status === 'error' && errorMessage && (
+        <p
+          className="text-sm text-red-700 dark:text-red-400 font-medium rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3"
+          role="alert"
+        >
+          {errorMessage}
+        </p>
+      )}
+
+      {!CONTACT_FORM_URL && status === 'idle' && (
+        <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-md p-3 border border-amber-200 dark:border-amber-800">
+          Formulario en modo demo. Configura <code className="px-1 bg-amber-100 dark:bg-amber-900 rounded">NEXT_PUBLIC_CONTACT_FORM_URL</code> (ej: Formspree) para enviar mensajes.
+        </p>
+      )}
+
+      <Button type="submit" className="w-full" disabled={status === 'loading'}>
+        {status === 'loading' ? 'Enviando...' : 'Enviar Mensaje'}
       </Button>
     </form>
   );

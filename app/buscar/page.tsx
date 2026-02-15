@@ -35,13 +35,9 @@ function SearchContent() {
     setLoading(true);
     setHasSearched(true);
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setResults(data.posts || []);
-      } else {
-        setResults([]);
-      }
+      const { searchPosts } = await import('@/lib/api/wordpress-client');
+      const posts = await searchPosts(searchQuery);
+      setResults(posts);
     } catch {
       setResults([]);
     } finally {

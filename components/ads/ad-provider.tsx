@@ -24,7 +24,7 @@ const CONSENT_DEFAULT = {
 declare global {
   interface Window {
     dataLayer?: unknown[];
-    gtag?: (...args: unknown[]) => void;
+    gtag?: (command: 'set' | 'config' | 'event' | 'js', targetId: string | Date, config?: Record<string, unknown>) => void;
   }
 }
 

@@ -1,18 +1,36 @@
 /**
  * Script para probar la conexión con WordPress
  * Ejecutar con: node scripts/test-wordpress-connection.js
- * 
- * Nota: Si no tienes dotenv instalado, puedes instalar con:
- * npm install --save-dev dotenv
- * O simplemente ejecutar: NEXT_PUBLIC_WP_API_URL=https://lascincodeldia.com/wp-json/wp/v2 node scripts/test-wordpress-connection.js
+ *
+ * Antes del build estático, ejecuta esto para verificar que WordPress sea accesible.
+ * Si /users devuelve 401, añade WP_SKIP_AUTHORS=true a .env para el build.
+ *
+ * Alternativa con curl:
+ *   curl -I "https://cms.lascincodeldia.com/wp-json/wp/v2/posts?per_page=1"
+ *   curl -I "https://cms.lascincodeldia.com/wp-json/wp/v2/users"
  */
 
-// Intentar cargar dotenv si está disponible
+// Cargar .env manualmente si dotenv no está
+function loadEnv(file) {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const p = path.resolve(process.cwd(), file);
+    if (fs.existsSync(p)) {
+      const content = fs.readFileSync(p, 'utf8');
+      content.split('\n').forEach((line) => {
+        const m = line.match(/^\s*([^#=]+)=(.*)$/);
+        if (m) process.env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, '');
+      });
+    }
+  } catch (_) {}
+}
 try {
   require('dotenv').config({ path: '.env.local' });
-} catch (e) {
-  // dotenv no está instalado, usar variables de entorno del sistema
-  console.log('ℹ️  dotenv no está instalado, usando variables de entorno del sistema\n');
+  require('dotenv').config({ path: '.env.production' });
+} catch (_) {
+  loadEnv('.env.local');
+  loadEnv('.env.production');
 }
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WP_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
@@ -79,11 +97,25 @@ async function testConnection() {
     }
     console.log('');
 
-    console.log('✅✅✅ Todas las pruebas pasaron exitosamente!');
+    // Probar endpoint de usuarios (suele dar 401 sin auth)
+    console.log('5. Probando endpoint de usuarios (/users)...');
+    const usersResponse = await fetch(`${WP_API_URL}/users?per_page=1&_fields=slug`);
+    if (usersResponse.ok) {
+      const users = await usersResponse.json();
+      console.log(`✅ Endpoint de usuarios accesible (${users.length} ejemplo)`);
+    } else if (usersResponse.status === 401) {
+      console.log('⚠️  /users devuelve 401 Unauthorized (normal: WP exige auth)');
+      console.log('   Para el build estático, añade WP_SKIP_AUTHORS=true a .env');
+    } else {
+      console.log(`⚠️  /users devolvió ${usersResponse.status} ${usersResponse.statusText}`);
+    }
+    console.log('');
+
+    console.log('✅✅✅ Pruebas completadas');
     console.log('\n📝 Próximos pasos:');
-    console.log('   1. Ejecuta "npm run dev" para iniciar el servidor de desarrollo');
-    console.log('   2. Visita http://localhost:3000 para ver tu sitio');
-    console.log('   3. Si ves contenido de WordPress, la conexión está funcionando correctamente');
+    console.log('   - Dev: npm run dev');
+    console.log('   - Build estático: npm run build (requiere WordPress accesible en la red)');
+    console.log('   - Si /users da 401, define WP_SKIP_AUTHORS=true en .env');
 
   } catch (error) {
     console.error('\n❌ Error al conectar con WordPress:');

@@ -29,12 +29,8 @@ const AdSlot = dynamic(
 );
 
 const PER_PAGE = 12;
-export const revalidate = 120;
 
-type Props = {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
-};
+type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
   const slugs = await getCategorySlugs(50);
@@ -43,15 +39,16 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === '__build_fallback') notFound();
   const category = await getCategoryBySlug(slug);
   if (!category) notFound();
   return generateCategoryMetadata(category);
 }
 
-export default async function CategoryPage({ params, searchParams }: Props) {
+export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
-  const { page: pageParam } = await searchParams;
-  const currentPage = Math.max(1, parseInt(String(pageParam || '1'), 10) || 1);
+  if (slug === '__build_fallback') notFound();
+  const currentPage = 1; // Estático: siempre página 1. Paginación vía ArchiveFeed (scroll/cliente)
 
   const category = await getCategoryBySlug(slug);
   if (!category) notFound();
@@ -123,7 +120,6 @@ export default async function CategoryPage({ params, searchParams }: Props) {
               size="728x90"
               minHeight={90}
               lazy
-              testMode
             />
           </div>
 
@@ -134,7 +130,6 @@ export default async function CategoryPage({ params, searchParams }: Props) {
               size="300x600"
               minHeight={600}
               lazy
-              testMode
             />
           </aside>
         </div>

@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { ADS_FEATURE_FLAGS } from '@/lib/ads/config';
 
 export interface AdSlotProps {
   /**
@@ -58,8 +59,9 @@ export function AdSlot({
   minHeight = 250,
   lazy = true,
   className,
-  testMode = false,
+  testMode,
 }: AdSlotProps) {
+  const isTestMode = testMode ?? ADS_FEATURE_FLAGS.testMode;
   const [isVisible, setIsVisible] = useState(!lazy);
   const [isLoaded, setIsLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -85,7 +87,7 @@ export function AdSlot({
   }, [lazy, isVisible]);
 
   useEffect(() => {
-    if (!isVisible || testMode || isLoaded) return;
+    if (!isVisible || isTestMode || isLoaded) return;
     if (!adSlotId || !process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID) return;
 
     // Load AdSense script if not already loaded
@@ -112,10 +114,10 @@ export function AdSlot({
         console.error('Error loading ad:', error);
       }
     }
-  }, [isVisible, adSlotId, testMode, isLoaded]);
+  }, [isVisible, adSlotId, isTestMode, isLoaded]);
 
   // Test mode - show placeholder (fondo #F0F0F0, texto "Ad Slot 728x90" / "Ad Slot 300x600")
-  if (testMode) {
+  if (isTestMode) {
     const label = size ? `Ad Slot ${size}` : `Ad Slot ${format}`;
     return (
       <div

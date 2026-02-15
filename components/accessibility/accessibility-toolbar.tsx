@@ -50,6 +50,9 @@ function loadPreferences(): A11yPreferences {
       const parsed = JSON.parse(stored) as Partial<A11yPreferences>;
       return { ...DEFAULT_PREFS, ...parsed };
     }
+    // Sin preferencias guardadas: respetar preferencia del sistema (prefers-reduced-motion)
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return { ...DEFAULT_PREFS, reduceMotion: prefersReducedMotion };
   } catch {
     /* ignore */
   }

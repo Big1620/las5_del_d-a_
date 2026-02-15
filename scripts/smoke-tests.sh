@@ -20,24 +20,19 @@ log "1. GET / (200)"
 STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/")
 [ "$STATUS" = "200" ] && ok "Home: $STATUS" || fail "Home: esperado 200, got $STATUS"
 
-# 2. Health
-log "2. GET /api/health (200)"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/health")
-[ "$STATUS" = "200" ] || [ "$STATUS" = "503" ] && ok "Health: $STATUS" || fail "Health: esperado 200/503, got $STATUS"
-
-# 3. Sitemap
-log "3. GET /sitemap.xml (200)"
+# 2. Sitemap
+log "2. GET /sitemap.xml (200)"
 STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/sitemap.xml")
 [ "$STATUS" = "200" ] && ok "Sitemap: $STATUS" || fail "Sitemap: esperado 200, got $STATUS"
 
-# 4. Robots
-log "4. GET /robots.txt (200)"
+# 3. Robots
+log "3. GET /robots.txt (200)"
 STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/robots.txt")
 [ "$STATUS" = "200" ] && ok "Robots: $STATUS" || fail "Robots: esperado 200, got $STATUS"
 
-# 5. Páginas estáticas
+# 4. Páginas estáticas
 for path in "/buscar" "/contacto" "/privacidad"; do
-  log "5. GET $path (200)"
+  log "4. GET $path (200)"
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL$path")
   [ "$STATUS" = "200" ] && ok "$path: $STATUS" || fail "$path: esperado 200, got $STATUS"
 done
